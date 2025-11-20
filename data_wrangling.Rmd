@@ -1,0 +1,69 @@
+---
+title: "data_wrangling"
+author: "Wenjie Wu"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(skimr)
+library(janitor)
+library(ggplot2)
+```
+
+# Import data & data cleaning 
+```{r}
+cirrhosis <- read.csv("data/cirrhosis.csv") |> clean_names()
+```
+
+```{r}
+# Status convert to event indicator (1 = death, 0 = censored)
+cirrhosis <- cirrhosis |>
+  mutate(
+    event = case_when(
+      status == "D" ~ 1,
+      status %in% c("C", "CL") ~ 0,
+      TRUE ~ NA_real_
+    ),
+    sex = factor(sex),
+    drug = factor(drug),
+    ascites = factor(ascites),
+    hepatomegaly = factor(hepatomegaly),
+    spiders = factor(spiders),
+    edema = factor(edema, levels = c("N", "S", "Y"), ordered = TRUE)
+  )
+
+cirrhosis <- cirrhosis |>
+  mutate(age_years = age / 365.25)
+```
+
+```{r}
+skim(cirrhosis)
+```
+
+# Basic EDA
+```{r}
+cirrhosis |>
+  count(status) |>
+  ggplot(aes(x = status, y = n, fill = status)) +
+  geom_col() +
+  labs(title = "Distribution of Survival Status")
+```
+
+```{r}
+ggplot(cirrhosis, aes(x = status, y = age, fill = status)) +
+  geom_boxplot() +
+  labs(title = "Age Distribution by Survival Status", y = "Age (in days)", x = "Status") +
+  theme_minimal()
+```
+
+```{r}
+cirrhosis |>
+  pivot_longer(cols = c(albumin, bilirubin), names_to = "marker", values_to = "value") |>
+  ggplot(aes(x = status, y = value, fill = status)) +
+  geom_boxplot() +
+  facet_wrap(~marker, scales = "free_y") +
+  labs(title = "Key Lab Markers by Survival Status") +
+  theme_minimal()
+```
+
