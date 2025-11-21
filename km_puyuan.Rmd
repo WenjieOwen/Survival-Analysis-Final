@@ -1,0 +1,108 @@
+---
+title: "Final Project"
+author: "Puyuan Zhang (pz2334)"
+date: "2025-11-21"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(survival)
+library(survminer)
+library(gtsummary)
+library(dplyr)
+```
+
+
+```{r}
+cirrhosis <- read.csv("data/cirrhosis.csv") |> clean_names()
+```
+
+```{r}
+# Status convert to event indicator (1 = death, 0 = censored)
+cirrhosis <- cirrhosis |>
+  mutate(
+    event = case_when(
+      status == "D" ~ 1,
+      status %in% c("C", "CL") ~ 0,
+      TRUE ~ NA_real_
+    ),
+    sex = factor(sex),
+    drug = factor(drug),
+    ascites = factor(ascites),
+    hepatomegaly = factor(hepatomegaly),
+    spiders = factor(spiders),
+    edema = factor(edema, levels = c("N", "S", "Y"), ordered = TRUE)
+  )
+
+cirrhosis <- cirrhosis |>
+  mutate(age_years = age / 365.25)
+```
+
+```{r}
+km_dat <- cirrhosis |>
+  filter(!is.na(event), !is.na(n_days), !is.na(drug))
+
+fit_km <- survfit(Surv(n_days, event) ~ drug, data = km_dat)
+
+ggsurvplot(
+  fit_km,
+  data = km_dat,
+  risk.table = TRUE,
+  conf.int = TRUE,
+  xlab = "Follow-up time (days)",
+  ylab = "Survival probability",
+  legend.title = "Treatment",
+  legend.labs = c("D-penicillamine", "Placebo"),  # 顺序按 factor(drug) 水平
+  ggtheme = theme_minimal()
+)
+```
+
+```{r}
+fit_stage <- survfit(Surv(n_days, event) ~ drug + stage, data = km_dat)
+ggsurvplot(
+  fit_stage,
+  data = km_dat,
+  facet.by = "stage",       # 关键参数：按 stage 分面
+  conf.int = FALSE,
+  risk.table = TRUE,
+  legend.title = "Treatment",
+  legend.labs = c("D-penicillamine", "Placebo"),
+  xlab = "Time (days)",
+  ylab = "Survival probability",
+  ggtheme = theme_minimal()
+)
+```
+
+```{r}
+logrank <- survdiff(Surv(n_days, event) ~ drug, data = km_dat)
+logrank
+
+p_val <- 1 - pchisq(logrank$chisq, length(logrank$n) - 1)
+p_val
+
+cox_unadj <- coxph(Surv(n_days, event) ~ drug, data = km_dat)
+summary(cox_unadj)
+
+# HR and CI
+HR <- exp(coef(cox_unadj))
+CI <- exp(confint(cox_unadj))
+p_wald <- summary(cox_unadj)$coefficients[,"Pr(>|z|)"]
+
+# combine
+result <- data.frame(
+  HR = HR,
+  CI_lower = CI[1],
+  CI_upper = CI[2],
+  logrank_p = p_val,
+  wald_p = p_wald
+)
+result
+
+```
+
+
+
