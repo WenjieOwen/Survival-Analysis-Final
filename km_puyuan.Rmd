@@ -12,8 +12,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(survival)
 library(survminer)
-library(gtsummary)
 library(dplyr)
+library(tidyverse)
+library(skimr)
+library(janitor)
+library(ggplot2)
 ```
 
 
@@ -44,7 +47,21 @@ cirrhosis <- cirrhosis |>
 
 ```{r}
 km_dat <- cirrhosis |>
-  filter(!is.na(event), !is.na(n_days), !is.na(drug))
+  filter(!is.na(event), !is.na(n_days), !is.na(drug)) %>%
+  mutate(
+    age_group = ntile(age_years, 3),
+    age_group = factor(age_group, labels = c("Low", "Medium", "High"))
+  )  %>%
+  mutate(
+    bili_q = ntile(bilirubin, 4),
+    bili_q = factor(bili_q,
+                    labels = c("Q1 (lowest)", "Q2", "Q3", "Q4 (highest)"))
+  ) %>%
+  mutate(
+    alb_t = ntile(albumin, 3),
+    alb_t = factor(alb_t,
+                   labels = c("Low (T1)", "Medium (T2)", "High (T3)"))
+  )
 
 fit_km <- survfit(Surv(n_days, event) ~ drug, data = km_dat)
 
@@ -56,26 +73,14 @@ ggsurvplot(
   xlab = "Follow-up time (days)",
   ylab = "Survival probability",
   legend.title = "Treatment",
-  legend.labs = c("D-penicillamine", "Placebo"),  # 顺序按 factor(drug) 水平
+  legend.labs = c("D-penicillamine", "Placebo"),
   ggtheme = theme_minimal()
 )
 ```
 
-```{r}
-fit_stage <- survfit(Surv(n_days, event) ~ drug + stage, data = km_dat)
-ggsurvplot(
-  fit_stage,
-  data = km_dat,
-  facet.by = "stage",       # 关键参数：按 stage 分面
-  conf.int = FALSE,
-  risk.table = TRUE,
-  legend.title = "Treatment",
-  legend.labs = c("D-penicillamine", "Placebo"),
-  xlab = "Time (days)",
-  ylab = "Survival probability",
-  ggtheme = theme_minimal()
-)
-```
+The Kaplan–Meier survival curves for the D-penicillamine and placebo groups showed nearly identical trajectories over the 4,000-day follow-up period. The two curves overlapped substantially, with only mild and random fluctuations across time. This pattern indicates that, in the unadjusted analysis, there was no visible survival advantage associated with D-penicillamine treatment.
+
+The number-at-risk tables demonstrated comparable follow-up patterns in both groups, suggesting that differences in censoring did not explain the similarity in survival curves. Together, the visual evidence indicates that D-penicillamine did not meaningfully improve overall survival compared with placebo in this dataset.
 
 ```{r}
 logrank <- survdiff(Surv(n_days, event) ~ drug, data = km_dat)
@@ -83,7 +88,10 @@ logrank
 
 p_val <- 1 - pchisq(logrank$chisq, length(logrank$n) - 1)
 p_val
+```
+According to the MH logrank test, since we have p-value(p = 0.75) much larger than 0.05, we can conclude that there is not significant difference between different treatment group.
 
+```{r}
 cox_unadj <- coxph(Surv(n_days, event) ~ drug, data = km_dat)
 summary(cox_unadj)
 
@@ -104,5 +112,138 @@ result
 
 ```
 
+The unadjusted Cox proportional hazards model yielded a hazard ratio of 0.94 (95% CI: 0.66–1.35, p = 0.75), indicating no evidence that D-penicillamine improved survival compared with placebo. The confidence interval includes 1, and the effect size is small, suggesting that any potential treatment effect is likely negligible in magnitude.
 
+```{r}
+fit_stage <- survfit(Surv(n_days, event) ~ drug + stage, data = km_dat)
+ggsurvplot(
+  fit_stage,
+  data = km_dat,
+  facet.by = "stage", 
+  conf.int = T,
+  risk.table = TRUE,
+  legend.title = "Treatment",
+  legend.labs = c("D-penicillamine", "Placebo"),
+  xlab = "Time (days)",
+  ylab = "Survival probability",
+  ggtheme = theme_minimal()
+)
+```
+
+The stratified Kaplan–Meier curves demonstrate clear differences in overall survival across disease stages, confirming that stage is a major prognostic factor in this cohort. As expected, patients in stages 3 and 4 experienced markedly poorer survival compared with stages 1 and 2.
+
+When comparing treatment groups within each stage, the survival trajectories for D-penicillamine and placebo remained largely overlapping.
+
+Stage 1: Very few events occurred, and both curves remained close to 1.0 throughout follow-up, making treatment differences difficult to assess.
+
+Stage 2: Both groups showed similar gradual declines, with no consistent separation between curves.
+
+Stage 3: The curves nearly overlapped for the entire follow-up period, indicating no observable treatment benefit in this intermediate-risk subgroup.
+
+Stage 4: Although mortality was highest in this group, the D-penicillamine and placebo curves again followed similar patterns without evidence of divergence.
+
+Overall, stage-stratified KM curves suggest that disease severity strongly predicts survival, but the treatment effect does not vary meaningfully across stages. No stage subgroup demonstrated a survival advantage for D-penicillamine.
+
+```{r}
+logrank_stage <- survdiff(Surv(n_days, event) ~ drug + strata(stage), data = km_dat)
+logrank_stage
+
+p_val_stage <- 1 - pchisq(logrank_stage$chisq, length(logrank_stage$n) - 1)
+p_val_stage
+```
+Because disease stage is a strong predictor of survival, we performed a stratified log-rank test to compare treatment groups while controlling for stage. The p-value for this test is about 0.56, which is also much higher than 0.05, indicating no significant difference in survival probability between different treatment among stages.
+
+```{r}
+fit_age <- survfit(Surv(n_days, event) ~ drug + age_group, data = km_dat)
+ggsurvplot(
+  fit_age,
+  data = km_dat,
+  facet.by = "age_group", 
+  conf.int = T,
+  risk.table = TRUE,
+  legend.title = "Treatment",
+  legend.labs = c("D-penicillamine", "Placebo"),
+  xlab = "Time (days)",
+  ylab = "Survival probability",
+  ggtheme = theme_minimal()
+)
+```
+
+When we divided patients into three age groups (Low, Medium, High), we saw that age is strongly related to survival. Younger patients lived longer, and older patients had the highest risk of death.
+
+However, within each age group, the D-penicillamine and placebo survival curves look almost the same.
+
+In the Low age group, both treatments showed very similar survival patterns.
+
+In the Medium age group, the curves almost completely overlap.
+
+In the High age group, survival is poorer overall, but again the two treatments look very similar.
+
+This means that age does not change the treatment effect. No matter if patients are young, middle-aged, or older, D-penicillamine does not show a survival benefit.
+
+```{r}
+logrank_age <- survdiff(Surv(n_days, event) ~ drug + strata(age_group), data = km_dat)
+logrank_age
+
+p_val_age <- 1 - pchisq(logrank_age$chisq, length(logrank_age$n) - 1)
+p_val_age
+```
+After adjusting for age, there is still no difference in survival between D-penicillamine and placebo. The stratified log-rank test gives p = 1, which means the groups are almost identical.
+
+```{r}
+fit_bili <- survfit(Surv(n_days, event) ~ drug + bili_q, data = km_dat)
+ggsurvplot(
+  fit_bili,
+  data = km_dat,
+  facet.by = "bili_q", 
+  conf.int = T,
+  risk.table = TRUE,
+  legend.title = "Treatment",
+  legend.labs = c("D-penicillamine", "Placebo"),
+  xlab = "Time (days)",
+  ylab = "Survival probability",
+  ggtheme = theme_minimal()
+)
+```
+
+When we divided patients into four bilirubin groups (Q1 = lowest, Q4 = highest), we observed clear differences in baseline survival. Patients with higher bilirubin levels (Q3 and especially Q4) had much poorer survival.
+
+However, within each bilirubin group, the survival curves of the D-penicillamine and placebo groups remained very similar. These patterns show that bilirubin strongly predicts prognosis, but it does not modify or influence the treatment effect. 
+
+```{r}
+logrank_bili <- survdiff(Surv(n_days, event) ~ drug + strata(bili_q), data = km_dat)
+logrank_bili
+
+p_val_bili <- 1 - pchisq(logrank_bili$chisq, length(logrank_bili$n) - 1)
+p_val_bili
+```
+The stratified logrank test support the conclusion above which indicate that there is no significant difference in survival between D-penicillamine and placebo among different bilirubin group.
+
+```{r}
+fit_alb <- survfit(Surv(n_days, event) ~ drug + alb_t, data = km_dat)
+ggsurvplot(
+  fit_alb,
+  data = km_dat,
+  facet.by = "alb_t", 
+  conf.int = T,
+  risk.table = TRUE,
+  legend.title = "Treatment",
+  legend.labs = c("D-penicillamine", "Placebo"),
+  xlab = "Time (days)",
+  ylab = "Survival probability",
+  ggtheme = theme_minimal()
+)
+```
+
+Patients with lower albumin have worse survival, and patients with higher albumin live longer. But within each albumin group, the D-penicillamine and placebo curves are almost the same. This means albumin affects prognosis, but it does not change the treatment effect — the drug still shows no benefit in any albumin level.
+
+```{r}
+logrank_alb <- survdiff(Surv(n_days, event) ~ drug + strata(alb_t), data = km_dat)
+logrank_alb
+
+p_val_alb <- 1 - pchisq(logrank_alb$chisq, length(logrank_alb$n) - 1)
+p_val_alb
+```
+
+The stratified logrank test support the conclusion above which indicate that there is no significant difference in survival between D-penicillamine and placebo among different albumin group.
 
