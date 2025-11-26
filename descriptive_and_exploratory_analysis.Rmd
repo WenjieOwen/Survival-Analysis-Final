@@ -43,9 +43,6 @@ cirrhosis <- cirrhosis |>
 cirrhosis <- cirrhosis |>
   mutate(age_years = age / 365.25)
 
-cirrhosis <- cirrhosis |> 
-  mutate(time_days = n_days)   # Yixin: define survival time as number of day (time_days) 
-
 skim(cirrhosis)
 ```
 

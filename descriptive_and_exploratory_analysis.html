@@ -384,9 +384,6 @@ cirrhosis &lt;- cirrhosis |&gt;
 cirrhosis &lt;- cirrhosis |&gt;
   mutate(age_years = age / 365.25)
 
-cirrhosis &lt;- cirrhosis |&gt; 
-  mutate(time_days = n_days)   # Yixin: define survival time as number of day (time_days) 
-
 skim(cirrhosis)</code></pre>
 <table>
 <caption>Data summary</caption>
@@ -401,7 +398,7 @@ skim(cirrhosis)</code></pre>
 </tr>
 <tr class="odd">
 <td align="left">Number of columns</td>
-<td align="left">23</td>
+<td align="left">22</td>
 </tr>
 <tr class="even">
 <td align="left">_______________________</td>
@@ -421,7 +418,7 @@ skim(cirrhosis)</code></pre>
 </tr>
 <tr class="even">
 <td align="left">numeric</td>
-<td align="left">15</td>
+<td align="left">14</td>
 </tr>
 <tr class="odd">
 <td align="left">________________________</td>
@@ -761,19 +758,6 @@ skim(cirrhosis)</code></pre>
 <td align="right">58.24</td>
 <td align="right">78.44</td>
 <td align="left">▂▆▇▅▁</td>
-</tr>
-<tr class="odd">
-<td align="left">time_days</td>
-<td align="right">0</td>
-<td align="right">1.00</td>
-<td align="right">1917.78</td>
-<td align="right">1104.67</td>
-<td align="right">41.00</td>
-<td align="right">1092.75</td>
-<td align="right">1730.00</td>
-<td align="right">2613.50</td>
-<td align="right">4795.00</td>
-<td align="left">▅▇▆▃▂</td>
 </tr>
 </tbody>
 </table>
