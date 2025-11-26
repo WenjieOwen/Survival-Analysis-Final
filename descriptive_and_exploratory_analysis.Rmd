@@ -1,0 +1,307 @@
+---
+title: "descriptive_and_exploratory_analysis"
+author: "Yixin Zheng"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE) # keep it for now for easier checking
+
+library(tidyverse)
+library(skimr)
+library(janitor)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(webshot2)
+```
+
+# Data Preparation
+## Data Wrangling (wenjie)
+```{r wenjie_data_wrangling}
+# Import data & data cleaning 
+cirrhosis <- read.csv("data/cirrhosis.csv") |> clean_names()
+
+# Status convert to event indicator (1 = death, 0 = censored)
+cirrhosis <- cirrhosis |>
+  mutate(
+    event = case_when(
+      status == "D" ~ 1,
+      status %in% c("C", "CL") ~ 0,
+      TRUE ~ NA_real_
+    ),
+    sex = factor(sex),
+    drug = factor(drug),
+    ascites = factor(ascites),
+    hepatomegaly = factor(hepatomegaly),
+    spiders = factor(spiders),
+    edema = factor(edema, levels = c("N", "S", "Y"), ordered = TRUE),
+    stage = factor(stage) # Yixin: "Stage: histologic stage of disease (1, 2, 3, or 4)"
+  )
+
+cirrhosis <- cirrhosis |>
+  mutate(age_years = age / 365.25)
+
+cirrhosis <- cirrhosis |> 
+  mutate(time_days = n_days)   # Yixin: define survival time as number of day (time_days) 
+
+skim(cirrhosis)
+```
+
+## Data Cleaning (yixin)
+```{r yixin_data_clean}
+# Yixin: restrict to randomized trial patients (non-missing drug)
+cirr_trial <- cirrhosis |> filter(!is.na(drug))
+
+# Yixin: store counts for text/reporting
+n_total <- nrow(cirrhosis)
+n_trial <- nrow(cirr_trial)
+n_nonrand <- n_total - n_trial
+
+# Yixin: baseline variables that will go into the tables/tests
+baseline_vars <- c("age_years", "sex", "drug", "bilirubin", "albumin", 
+                   "prothrombin", "ascites", "hepatomegaly", "spiders", "edema")
+
+# Yixin: complete-case dataset for baseline comparisons
+cirr_complete <- cirr_trial |> drop_na(all_of(baseline_vars))
+```
+
+# Descriptive and Exploratory Analysis
+We assessed baseline balance between the Placebo and D-penicillamine groups using summaries of key demographic and clinical variables.
+## Basic EDA (wenjie)
+```{r wenjie_basic_EDA}
+cirrhosis |>
+  count(status) |>
+  ggplot(aes(x = status, y = n, fill = status)) +
+  geom_col() +
+  labs(title = "Distribution of Survival Status")
+
+ggplot(cirrhosis, aes(x = status, y = age, fill = status)) +
+  geom_boxplot() +
+  labs(title = "Age Distribution by Survival Status", y = "Age (in days)", x = "Status") +
+  theme_minimal()
+
+cirrhosis |>
+  pivot_longer(cols = c(albumin, bilirubin), names_to = "marker", values_to = "value") |>
+  ggplot(aes(x = status, y = value, fill = status)) +
+  geom_boxplot() +
+  facet_wrap(~marker, scales = "free_y") +
+  labs(title = "Key Lab Markers by Survival Status") +
+  theme_minimal()
+```
+
+
+## Continuous Baseline Variables (yixin)
+For continuous baseline variables, 
+we compared the two treatment groups using both:
+Two-sample t-tests (for differences in mean values), 
+and Wilcoxon rank-sum tests (nonparametric robustness checks).
+The corresponding hypotheses were:
+$$
+\begin{aligned}
+H_{0}:~& \mu_{\text{Placebo}} = \mu_{\text{Dpen}} \\
+H_{1}:~& \mu_{\text{Placebo}} \neq \mu_{\text{Dpen}}
+\end{aligned}
+$$
+
+```{r yixin_continuous_baseline_variables}
+# Yixin: baseline tables + hypothesis tests by treatment group
+# randomized patients only (cirr_trial), using cirr_complete for continuous vars.
+
+# Yixin: we choose clinically relevant continuous baseline variables with minimal missingness.
+# Including variables like copper or cholesterol would greatly reduce complete-case sample size ,
+# so we follow the Mayo PBC literature (Dickson et al.) and summarize only key prognostic markers.
+cont_vars <- c("age_years", "bilirubin", "albumin", "prothrombin")
+
+cont_summary <- function(x) {
+  mean_x <- mean(x, na.rm = TRUE)
+  sd_x   <- sd(x, na.rm = TRUE)
+  med_x  <- median(x, na.rm = TRUE)
+  q1_x   <- quantile(x, 0.25, na.rm = TRUE)
+  q3_x   <- quantile(x, 0.75, na.rm = TRUE)
+  
+  list(
+    mean = mean_x,
+    sd   = sd_x,
+    med  = med_x,
+    q1   = q1_x,
+    q3   = q3_x
+  )
+  }
+
+baseline_cont <- lapply(cont_vars, function(v) {
+  x_placebo <- cirr_complete |> # Yixin: extract values by treatment group from complete-case dataset
+    filter(drug == "Placebo") |>
+    pull(!!sym(v))
+  
+  x_dpen <- cirr_complete |>
+    filter(drug == "D-penicillamine") |>
+    pull(!!sym(v))
+  
+  s0 <- cont_summary(x_placebo)  # Yixin: Placebo summary
+  s1 <- cont_summary(x_dpen)     # Yixin: D-penicillamine summary
+  
+# Yixin: two-sample t-test and Wilcoxon rank-sum test (D-penicillamine vs Placebo)
+  t_res <- t.test(x_dpen, x_placebo, var.equal = FALSE)
+  w_res <- wilcox.test(x_dpen, x_placebo, exact = FALSE)
+  
+  tibble(
+    Variable = v,
+    Placebo_mean_SD = sprintf("%.2f (%.2f)", s0$mean, s0$sd),
+    Dpen_mean_SD = sprintf("%.2f (%.2f)", s1$mean, s1$sd),
+    Placebo_median_IQR = sprintf("%.2f (%.2f, %.2f)", s0$med, s0$q1, s0$q3),
+    Dpen_median_IQR = sprintf("%.2f (%.2f, %.2f)", s1$med, s1$q1, s1$q3),
+    t_test_p_value = t_res$p.value,
+    wilcoxon_rank_sum_p_value = w_res$p.value)
+  }) |>
+  bind_rows()
+
+# Yixin: replace variable codes with full names for the table
+baseline_cont <- baseline_cont |>
+  mutate(
+    Variable = dplyr::recode(
+      Variable,
+      age_years   = "Age (years)",
+      bilirubin   = "Serum bilirubin (mg/dL)",
+      albumin     = "Albumin (g/dL)",
+      prothrombin = "Prothrombin time (seconds)"
+      )
+    )
+
+# Yixin: column labels for the table header
+colnames(baseline_cont) <- c(
+  "Baseline variable",
+  "Placebo mean (SD)",
+  "D-penicillamine mean (SD)",
+  "Placebo median (IQR)",
+  "D-penicillamine median (IQR)",
+  "t-test p-value",
+  "Wilcoxon p-value"
+  )
+
+# Yixin: final baseline table for continuous variables
+knitr::kable(
+  baseline_cont,
+  digits = 3,
+  caption = "Baseline continuous variables by treatment group (randomized complete cases)"
+  )
+```
+
+From table above, we see that, for these 4 key continuous baseline variables, only age has a statistically significant difference between treatment groups (t-test $p \approx 0.018$; Wilcoxon $p \approx 0.020$), 
+meaning that patients in the D-penicillamine group were slightly older at baseline. 
+For bilirubin, albumin, and prothrombin time, we did not reject the null hypothesis as the p-values obatined were large. Overall, continuous variables are pretty balanced between treatment groups beside age. 
+
+## Categorical Baseline Variables (yixin)
+For categorical baseline variables, 
+we evaluated group differences using:
+Pearson’s chi-squared test, when all expected cell counts were adequate
+Fisher’s exact test, when sparse cells were present.
+the corresponding hypotheses were:
+$$
+\begin{aligned}
+H_{0}:~& P(X = k \mid \text{Placebo}) = P(X = k \mid \text{Dpen}) 
+\quad \text{for all } k, \\[6pt]
+H_{1}:~& \exists\, k \text{ such that } 
+P(X = k \mid \text{Placebo}) \neq P(X = k \mid \text{Dpen})
+\end{aligned}
+$$
+
+```{r yixin_categorical_baseline_variables}
+# Yixin: use the randomized dataset, drop NAs
+cat_vars <- c("sex", "ascites", "hepatomegaly", "spiders", "edema", "stage")
+
+baseline_cat <- lapply(cat_vars, function(v) {
+  dat_v <- cirr_trial |>
+    select(drug, !!sym(v)) |>
+    drop_na()  # Yixin: remove missing for drugs only
+  
+  tab  <- table(dat_v[[v]], dat_v$drug)
+  prop <- prop.table(tab, margin = 2)  # column % within each treatment group
+  
+  # Yixin: choose Pearson chi-squared if all expected counts are reasonable, otherwise choose Fisher
+  if (any(tab < 5)) {
+    test <- fisher.test(tab)
+    test_name <- "Fisher's exact"
+  } else {
+    test <- chisq.test(tab, correct = FALSE)
+    test_name <- "Chi-squared"
+  }
+  
+  df <- as.data.frame(tab)
+  df$Percent <- round(100 * as.vector(prop), 1)
+  df$Label   <- paste0(df$Freq, " (", df$Percent, "%)")
+  
+  wide <- tidyr::pivot_wider(
+    df,
+    id_cols  = Var1,
+    names_from = Var2,
+    values_from = Label
+  )
+  
+  names(wide)[1] <- "Level"
+  wide$Variable <- v
+  wide$Test     <- test_name
+  wide$Pvalue   <- test$p.value
+  wide
+}) |>
+  bind_rows()
+
+# Yixin: replace Variable codes with full names
+baseline_cat <- baseline_cat |>
+  mutate(
+    Variable = dplyr::recode(
+      Variable,
+      sex = "Sex",
+      ascites = "Ascites",
+      hepatomegaly = "Hepatomegaly",
+      spiders = "Spider angiomas",
+      edema = "Edema",
+      stage = "Histologic stage"
+    )
+  )
+
+# Yixin: reorder columns for readability and give clearer names
+baseline_cat <- baseline_cat |>
+  select(Variable, Level, Placebo, `D-penicillamine`, Test, Pvalue)
+
+colnames(baseline_cat) <- c(
+  "Baseline variable",
+  "Level",
+  "Placebo n (%)",
+  "D-penicillamine n (%)",
+  "Test type",
+  "p-value"
+)
+
+knitr::kable(
+  baseline_cat,
+  digits = 3,
+  caption = "Baseline categorical variables by treatment group (randomized patients)"
+)
+```
+From the table above, we see that, for all categorical variables, the Chi-squared or Fisher’s exact tests produced non-significant p-values. Therefore, we fail to reject the null hypothesis, indicating there's no evidence of imbalance in the distribution of any categorical baseline variables. The two randomized groups is therefore comparable with respect to these characteristics.
+```{r Yixin: saving tables, include=FALSE}
+cont_html <- baseline_cont |>
+  kable(format = "html", digits = 3,
+        caption = "Baseline continuous variables by treatment group (randomized complete cases)") |>
+  kable_styling(full_width = FALSE)
+
+save_kable(cont_html, "baseline_continuous.html")
+
+webshot("baseline_continuous.html", 
+        file = "baseline_continuous.png",
+        vwidth = 1600, vheight = 1200, zoom = 2)
+
+cat_html <- baseline_cat |>
+  kable(format = "html", digits = 3,
+        caption = "Baseline categorical variables by treatment group (randomized patients)") |>
+  kable_styling(full_width = FALSE)
+
+save_kable(cat_html, "baseline_categorical.html")
+
+webshot("baseline_categorical.html", 
+        file = "baseline_categorical.png",
+        vwidth = 1600, vheight = 1600, zoom = 2)
+```
+
