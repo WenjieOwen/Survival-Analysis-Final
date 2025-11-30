@@ -6,25 +6,229 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE) # keep it for now for easier checking
+
+library(tidyverse)
+library(skimr)
+library(janitor)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(webshot2)
+library(dplyr)
+library(tidyr)
+library(survival)
+
 ```
 
-## R Markdown
+# Data Preparation
+## Data Wrangling (wenjie)
+```{r wenjie_data_wrangling}
+# Import data & data cleaning 
+cirrhosis <- read.csv("data/cirrhosis.csv") |> clean_names()
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+# Status convert to event indicator (1 = death, 0 = censored)
+cirrhosis <- cirrhosis |>
+  mutate(
+    event = case_when(
+      status == "D" ~ 1,
+      status %in% c("C", "CL") ~ 0,
+      TRUE ~ NA_real_
+    ),
+    sex = factor(sex),
+    drug = factor(drug),
+    ascites = factor(ascites),
+    hepatomegaly = factor(hepatomegaly),
+    spiders = factor(spiders),
+    edema = factor(edema, levels = c("N", "S", "Y"), ordered = TRUE),
+    stage = factor(stage) # Yixin: "Stage: histologic stage of disease (1, 2, 3, or 4)"
+  )
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+cirrhosis <- cirrhosis |>
+  mutate(age_years = age / 365.25)
 
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
+## Model fitting(Zhaokun)
+```{r}
+cirr_trial <- cirrhosis |>
+  filter(!is.na(drug))
 
-You can also embed plots, for example:
+cirr_trial <- cirr_trial |>
+  mutate(
+    log_bilirubin  = log(bilirubin),         
+    # log_platelets   = log(platelets),
+    # log_prothrombin = log(prothrombin)
+  )
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+cirr_trial <- cirr_trial |>
+  mutate(
+    edema_bin = case_when(
+      edema == "N" ~ 0L,                  
+      edema %in% c("S", "Y") ~ 1L,       
+      TRUE ~ NA_integer_
+    )
+  )
+
+# Missing values per variable in RCT (drug non-missing)
+trial_missing <- cirr_trial %>%
+  summarise(across(
+    .cols = everything(),
+    .fns  = ~ sum(is.na(.)),
+    .names = "n_miss_{.col}"
+  )) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "variable",
+    values_to = "n_missing"
+  ) %>%
+  mutate(
+    variable    = sub("^n_miss_", "", variable),
+    pct_missing = round(n_missing / nrow(cirr_trial) * 100, 1)
+  ) %>%
+  arrange(desc(n_missing))
+
+trial_missing
+knitr::kable(trial_missing, caption = "Missing values per variable in RCT (drug non-missing)")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Tryglicerides and cholesterol has lots of missing value, and platelets has 4, copper has 2, so we choose to drop tryglicerides and cholesterol
+
+```{r}
+# fit model
+vars_main <- c(
+  "id", "n_days", "event",
+  "drug", "age_years",
+  "log_bilirubin", "albumin", "prothrombin",
+  "sex", "ascites", "edema_bin",
+  "platelets", "copper",
+  "stage"
+)
+
+cirr_main <- cirr_trial |>
+  select(all_of(vars_main)) |>
+  drop_na()
+
+fit_main <- coxph(
+  Surv(n_days, event) ~
+    drug +
+    age_years +
+    log_bilirubin + albumin + prothrombin +
+    sex + ascites + edema_bin + platelets + copper +
+    strata(stage),
+  data = cirr_main
+)
+summary(fit_main)
+
+# ph test
+ph_test <- cox.zph(fit_main)
+ph_test         
+
+plot(ph_test)  
+```
+
+The proportional hazards assumption was evaluated using scaled Schoenfeld residuals. In the `cox.zph` table, the global test (χ² = 15.25 on 10 df, p = 0.123) does not provide strong evidence against the proportional hazards assumption for the model as a whole. For most covariates—including treatment (drug), age, log-bilirubin, albumin, sex, ascites, platelets, and copper—the p-values are comfortably above 0.10, suggesting that their effects on the log-hazard can be regarded as approximately constant over time. Two variables stand out: prothrombin (p ≈ 0.043) and edema_bin (p ≈ 0.010), which show some statistical evidence that their effects may vary with time and are mainly responsible for the mild global deviation.
+
+The Schoenfeld residual plots provide a graphical check of the same assumption. For each covariate, the smoothed curve of the residuals over time is close to a horizontal line around zero when proportional hazards holds. For drug, age_years, log_bilirubin, albumin, sex, ascites, platelets, and copper, the smoothed lines are nearly flat and remain within the confidence bands without any clear upward or downward trend, which visually supports the proportional hazards assumption. In contrast, the plots for prothrombin and edema_bin show gentle curvature over time rather than perfectly flat lines, consistent with their smaller p-values. These patterns suggest that the hazard ratios associated with prothrombin and edema may change slightly during follow-up, but the deviations appear modest rather than dramatic.
+
+Overall, the diagnostics indicate that the Cox model satisfies the proportional hazards assumption reasonably well. The main parameters of interest—especially the treatment effect—do not exhibit meaningful time-varying behavior, and the mild non-proportionality seen for prothrombin and edema is unlikely to materially alter the estimated treatment effect, though it can be acknowledged as a limitation or explored further in sensitivity analyses.
+
+## Variable selection
+
+We selected the final set of covariates by jointly considering the Kaplan–Meier results, the proportional hazards (PH) tests, and the Schoenfeld residual plots. The KM curves showed that D-penicillamine and placebo had almost identical survival, while baseline factors such as disease stage, age, bilirubin and albumin produced clear and clinically meaningful separation of the survival curves, indicating that they are strong prognostic factors that must be adjusted for. In the Cox model, these core variables (age_years, log_bilirubin, albumin, prothrombin and edema_bin, with stage treated as a stratification factor) also showed large and stable effects, and the PH diagnostics supported treating them as time-constant: the cox.zph table gave non-significant PH tests for treatment and the main prognostic covariates, and the corresponding Schoenfeld residual plots showed smoothed lines that were essentially flat around zero. Although prothrombin and edema_bin had borderline PH test p-values and mild curvature in their residual plots, the deviations were small and did not suggest dramatic time-varying effects, so we chose to retain them while acknowledging this as a minor limitation. In contrast, variables such as sex, ascites, platelets and copper showed weak or inconsistent effects in both KM and multivariable analyses and did not exhibit important PH violations; their inclusion mainly increased model complexity without improving fit or altering the treatment hazard ratio. Therefore, combining the evidence from KM patterns, PH tests and residual plots, we treated the strong prognostic covariates as mandatory adjustment variables and allowed only the weaker, secondary predictors to be removed in the variable selection process, arriving at a parsimonious model that is both clinically interpretable and consistent with the PH assumption.
+
+can drop sex/ascites/platelets/copper
+
+```{r}
+fit_no_copper <- update(fit_main, . ~ . - copper)
+anova(fit_main, fit_no_copper, test = "LRT")
+
+summary(fit_main)$coef["drugPlacebo", ]
+summary(fit_no_copper)$coef["drugPlacebo", ]
+```
+
+We first compared the full Cox model including copper with a reduced model without copper using a likelihood ratio test. Removing copper led to only a minimal change in model fit (Δlog-likelihood = 0.89; χ² = 1.79 on 1 df, p = 0.18), indicating that copper contributed little additional explanatory power beyond the other covariates. The estimated treatment effect was essentially unchanged (HR for D-penicillamine vs placebo 1.19 in the full model vs 1.22 in the reduced model), suggesting that copper is not an important confounder of the treatment–outcome relationship. On this basis, we excluded copper from the main Cox model for parsimony.
+
+```{r}
+fit_no_platelets <- update(fit_no_copper, . ~ . - platelets)
+anova(fit_no_copper, fit_no_platelets, test = "LRT")
+```
+
+After removing platelets, the log-likelihood changes only from –412.92 to –413.07, giving a likelihood ratio χ² = 0.30 on 1 degree of freedom with p = 0.585. Because this p-value is large, there is no evidence that excluding platelets worsens model fit, meaning platelets adds very little explanatory power once the other covariates are in the model. In practice, this result supports dropping platelets from the main Cox model for parsimony, provided that the estimated treatment hazard ratio remains virtually unchanged after its removal.
+
+```{r}
+fit_no_sex <- update(fit_no_platelets, . ~ . - sex)
+anova(fit_no_platelets, fit_no_sex, test = "LRT")
+```
+
+When sex is removed, the log-likelihood changes from –413.07 to –414.26, giving a likelihood ratio χ² = 2.38 on 1 degree of freedom with p = 0.123. This p-value is above 0.05, so there is no statistically significant evidence that excluding sex worsens model fit. In other words, once the other covariates are in the model, sex does not add much extra explanatory power. As long as the estimated treatment hazard ratio (and the key prognostic effects) remain essentially unchanged after removing sex, this result supports dropping sex from the main Cox model for parsimony.
+
+```{r}
+fit_no_ascites <- update(fit_no_sex, . ~ . - ascites)
+anova(fit_no_sex, fit_no_ascites, test = "LRT")
+```
+
+The result supports dropping ascites from the main Cox model for parsimony.
+
+## final model
+```{r}
+fit_final <- coxph(
+  Surv(n_days, event) ~
+    drug +                # treatment: D-pen vs placebo
+    age_years +           # age in years
+    log_bilirubin +       # log-transformed bilirubin
+    albumin +             # serum albumin
+    prothrombin +         # prothrombin time
+    edema_bin +           # edema: 0 = none, 1 = S/Y
+    strata(stage),        # histologic stage as stratification factor
+  data = cirr_main
+)
+
+summary(fit_final)
+s <- summary(fit_final)
+cox_tab <- data.frame(
+  Variable = rownames(s$coefficients),
+  HR       = s$coefficients[, "exp(coef)"],
+  lower95  = s$conf.int[, "lower .95"],
+  upper95  = s$conf.int[, "upper .95"],
+  p_value  = s$coefficients[, "Pr(>|z|)"]
+)
+
+cox_tab
+cox_tab |>
+  mutate(
+    HR_CI = sprintf("%.2f (%.2f, %.2f)", HR, lower95, upper95),
+    p_value = sprintf("%.3f", p_value)
+  ) |>
+  select(Variable, HR_CI, p_value) |>
+  kable(
+    caption = "Final Cox proportional hazards model: hazard ratios, 95% CI and p-values"
+  )
+
+ph_final <- cox.zph(fit_final)
+ph_final
+plot(ph_final)
+
+
+```
+
+
+
+```{r}
+fit_no_edema <- coxph(
+  Surv(n_days, event) ~
+    drug + age_years +
+    log_bilirubin + albumin + prothrombin +
+    strata(stage),
+  data = cirr_main
+)
+
+summary(fit_final)$coef["drugPlacebo", ]
+summary(fit_no_edema)$coef
+```
+
+In the randomized trial cohort (n = 306; 123 deaths), the final Cox model adjusted for age, log-transformed bilirubin, albumin, prothrombin time and edema, with histological stage included as a stratification factor. After variable selection, weaker baseline variables (copper, platelets, sex and ascites) were excluded because they added little to model fit and did not change the estimated treatment effect. In this main model, D-penicillamine did not improve survival compared with placebo: the hazard ratio (HR) was 1.23 (95% CI 0.85–1.80, p = 0.27), indicating no statistically significant benefit and, if anything, a small, imprecisely estimated increase in risk. In contrast, several baseline clinical markers were strong predictors of mortality. Older age was associated with higher risk (HR 1.03 per year, 95% CI 1.01–1.05), higher bilirubin markedly increased risk (HR 2.39 per one-unit increase in log-bilirubin, 95% CI 1.94–2.95), and low albumin was strongly protective in the opposite direction (HR 0.46, 95% CI 0.28–0.74). Longer prothrombin time was also associated with higher mortality (HR 1.30 per unit, 95% CI 1.07–1.58), and the presence of edema at baseline was linked to a roughly 1.6-fold higher hazard of death compared with no edema (HR 1.58, 95% CI 1.01–2.50). Overall discriminative ability was good, with a concordance of about 0.79.
+
+Proportional hazards diagnostics based on scaled Schoenfeld residuals showed that the PH assumption was broadly reasonable for the main covariates of interest. Treatment, age, bilirubin and albumin all had non-significant PH tests and residual plots without clear time trends, supporting approximately constant hazard ratios over follow-up. The global PH test was borderline (p ≈ 0.03), driven mainly by edema and marginally by prothrombin: their residual plots suggested only a modest, smooth time trend rather than a dramatic violation. Thus the corresponding HRs for edema and prothrombin are best interpreted as average effects over the study period, while the estimated treatment effect is not sensitive to these mild deviations.
+
+To evaluate the impact of the edema-related PH issue, we performed a sensitivity analysis excluding edema from the model. Removing edema changed the treatment hazard ratio only slightly, from 1.23 to 1.17, and it remained non-significant (p = 0.40). The direction and magnitude of the effects for age, bilirubin, albumin and prothrombin were also very similar. This indicates that edema is not an important confounder of the treatment–outcome relationship, and that the mild non-proportionality associated with edema is unlikely to bias the estimated effect of D-penicillamine on survival. Taken together, the KM curves, multivariable Cox estimates, PH diagnostics and sensitivity analyses consistently support the conclusion that D-penicillamine does not materially improve survival in this PBC trial, whereas baseline markers of liver disease severity (age, bilirubin, albumin, prothrombin and clinical edema) are the dominant determinants of prognosis.
