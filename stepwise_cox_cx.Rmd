@@ -136,7 +136,7 @@ plot(lasso)
 
 Another Lasso Cox Proportional Hazard regression was performed to identify the most parsimonious model that estimate subjects' hazard of Cirrhosis. The model selection was based on Penalty PArameter, lambda, under a 10 fold cross-validation. The final model achieved the penalty parameter of 0.06255, including the variables of Ascites Presence, Edema Presence, Albumin(mg/dl), Urine copper(ug/day),  Prothrombin time (s), histologic stage 4 of disease, age (years) and log-transformed serum Bilirubin (mg/dl) as predictors. Another simpler model was provided with the log-transformed serum Bilirubin (mg/dl) as the only predictor, where allows the largest penalty parameter at which the MSE is within one standard error of the smallest MSE. The model with the smallest penalty parameter was considered due to its better performance in estimation.
 
-The final model from Lasso selection further supported the results from the above data Cox ph model that drug is an insignificant predictor. Ascites Presence and Urine copper, in addition, was kept in the Lasso Cox model, but was removed in the final proposed model.
+The final model from Lasso selection further supported the results from the above data Cox Proportional Hazard model that drug is an insignificant predictor. Ascites Presence and Urine copper, in addition, was kept in the Lasso Cox model, but was removed in the final proposed model.
 
 ### Nomgram
 ```{r nomgram_cx}
@@ -193,4 +193,4 @@ title(
 
 ```
 
-The figure above is the nomogram generated to estimate the patients 1-, 3- and 5- year with predictors from the final Cox ph model.
+The figure above is the nomogram generated to estimate the patients 1-, 3- and 5- year with predictors from the final Cox ph model. The nomogram produces similar results where treatment types are no strong predictors in the model.
