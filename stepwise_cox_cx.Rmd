@@ -1,0 +1,194 @@
+---
+title: "stepwise_cox_cx"
+author: "Chuyuan XU"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE) # keep it for now for easier checking
+
+library(tidyverse)
+library(skimr)
+library(janitor)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(webshot2)
+library(dplyr)
+library(tidyr)
+library(survival)
+
+library(glmnet) # for lasso
+library(rms)    # for nomogram
+```
+
+
+# Data Preparation
+## Data Wrangling (wenjie, zhaokun)
+```{r wenjie_data_wrangling}
+# Import data & data cleaning 
+cirrhosis <- read.csv("data/cirrhosis.csv") |> clean_names()
+
+# Status convert to event indicator (1 = death, 0 = censored)
+cirrhosis <- cirrhosis |>
+  mutate(
+    event = case_when(
+      status == "D" ~ 1,
+      status %in% c("C", "CL") ~ 0,
+      TRUE ~ NA_real_
+    ),
+    sex = factor(sex),
+    drug = factor(drug),
+    ascites = factor(ascites),
+    hepatomegaly = factor(hepatomegaly),
+    spiders = factor(spiders),
+    edema = factor(edema, levels = c("N", "S", "Y"), ordered = TRUE),
+    stage = factor(stage) # Yixin: "Stage: histologic stage of disease (1, 2, 3, or 4)"
+  )
+
+cirrhosis <- cirrhosis |>
+  mutate(age_years = age / 365.25)
+
+```
+
+
+```{r extra prep}
+# drop variables not needed in the following modeling
+cirrhosis_df = cirrhosis |>
+  mutate(
+    # log_transformed bilirubin
+    log_bilirubin = log(bilirubin),
+    
+    # edema group "S" "Y" combined
+    edema_bin = case_when(
+      edema == "N" ~ 0L,                  
+      edema %in% c("S", "Y") ~ 1L,       
+      TRUE ~ NA_integer_
+    ),
+  ) |>
+  dplyr::select(-id, -status, -age, -tryglicerides, -cholesterol, -bilirubin, -edema) |>
+  na.omit()
+```
+
+All rows with NA omitted for Stepwise and LASSO Cox model selection.
+Log-transformed `Bilirubin` is included in the Cox model.
+`Edama` derives a binary variable `Edema_bin` based on the presence or absence of Edema.
+
+### Stepwise Cox
+```{r stepwise_cx}
+sw_full = coxph(
+  Surv(n_days, event) ~ 
+    drug + 
+    sex + ascites + hepatomegaly + 
+    spiders + edema_bin + albumin + 
+    copper + alk_phos + sgot + 
+    platelets + prothrombin + stage + 
+    age_years + log_bilirubin,
+  data = cirrhosis_df)
+
+sw_null = coxph(
+  Surv(n_days, event) ~ 
+    1, 
+  data = cirrhosis_df)
+
+step_cox = MASS::stepAIC(sw_full, direction = "both", na.rm = TRUE)
+summary(step_cox)
+```
+
+A Stepwise Cox Proportional Hazard regression was performed to identify the most parsimonious model that estimate subjects' hazard of Cirrhosis. The model selection was based on Akaike’s Information Criterion (AIC). The final model achieved the lowest AIC of 1086.6, including the variables of Edema Presence, Albumin(mg/dl), Urine copper(ug/day), SGOT (U/ml), Prothrombin time (s), histologic stage of disease, age (years) and log-transformed serum Bilirubin (mg/dl) as predictors. Several variables showed significant associations (p < 0.05) with the hazard function, while disease stages (all p-value > 0.05) and SGOT (p-value > 0.01) are weaker contributors to the model. The overall model shows significant discriminatory ability over subjects' hazards with a concordance of 0.858. Global tests shows the model has a good fit (Wald test, p=<2e-16).
+
+The final model from stepwise selection further supported the results from the above data Cox ph model that drug is an insignificant predictor. Urine copper and SGOT, in addition, was kept in the stepwise Cox model, but was removed in the final proposed model.
+
+
+### Lasso Cox
+```{r lasso_cx}
+# manually create dummy variable for stage 
+x = model.matrix(
+    ~ drug + 
+      sex + ascites + hepatomegaly + 
+      spiders + edema_bin + albumin + 
+      copper + alk_phos + sgot + 
+      platelets + prothrombin + stage + 
+      age_years + log_bilirubin - n_days - event, 
+    data = cirrhosis_df)[, -1]
+
+y = Surv(cirrhosis_df$n_days, cirrhosis_df$event)
+
+lasso = cv.glmnet(
+  x, 
+  y, 
+  family = "cox",
+  alpha = 1,
+  nfolds = 10)
+
+lasso$lambda.min      # lambda giving minimum cross-validation error
+lasso_min = coef(lasso, s = "lambda.min")
+lasso_min
+
+lasso$index
+
+plot(lasso)
+
+```
+
+Another Lasso Cox Proportional Hazard regression was performed to identify the most parsimonious model that estimate subjects' hazard of Cirrhosis. The model selection was based on Penalty PArameter, lambda, under a 10 fold cross-validation. The final model achieved the penalty parameter of 0.06255, including the variables of Ascites Presence, Edema Presence, Albumin(mg/dl), Urine copper(ug/day),  Prothrombin time (s), histologic stage 4 of disease, age (years) and log-transformed serum Bilirubin (mg/dl) as predictors. Another simpler model was provided with the log-transformed serum Bilirubin (mg/dl) as the only predictor, where allows the largest penalty parameter at which the MSE is within one standard error of the smallest MSE. The model with the smallest penalty parameter was considered due to its better performance in estimation.
+
+The final model from Lasso selection further supported the results from the above data Cox ph model that drug is an insignificant predictor. Ascites Presence and Urine copper, in addition, was kept in the Lasso Cox model, but was removed in the final proposed model.
+
+### Nomgram
+```{r nomgram_cx}
+# final model (Zhaokun)
+dd <- datadist(cirrhosis_df)
+options(datadist = "dd")
+
+fit_nomo <- cph(
+  Surv(n_days, event) ~
+    drug +                # treatment: D-pen vs placebo
+    age_years +           # age in years
+    log_bilirubin +       # log-transformed bilirubin
+    albumin +             # serum albumin
+    prothrombin +         # prothrombin time
+    edema_bin +           # edema: 0 = none, 1 = S/Y
+    stage,                # histologic stage as stratification factor
+  data = cirrhosis_df,
+  x = TRUE, y = TRUE, surv = TRUE)
+
+sf = Survival(fit_nomo)
+
+# survival time for 1 year, 3 year and 5 year
+surv_1y  <- function(lp) sf(365,  lp)
+surv_3y  <- function(lp) sf(1095, lp)
+surv_5y  <- function(lp) sf(1825, lp)
+
+nomo <- nomogram(
+  fit_nomo, 
+  fun = list(
+    "1-year Survival" = surv_1y,
+    "3-year Survival" = surv_3y,
+    "5-year Survival" = surv_5y
+    ),
+  funlabel = c("1-year Survival", "3-year Survival", "5-year Survival")
+  )
+
+plot(
+  nomo,
+  xfrac = 0.4,         # More room for labels
+  lmgp = 0.5,          # left margin for variable names
+  tcl = -0.5,          # Tick length
+  cex.var = 0.8,       # variable label size
+  cex.axis = 0.5,      # axis label size
+  cex.points = 1.2,    # Points scale
+  label.every = 2,     # Spread axis tick labels
+  fun.spacing = 1.8,   # vertical spacing
+  col.grid = "gray80",
+)
+
+title(
+  main ="Nomogram for Cirrhosis Survival",
+  sub = "1-, 3-, and 5-year survival predictions"
+)
+
+```
+
+The figure above is the nomogram generated to estimate the patients 1-, 3- and 5- year with predictors from the final Cox ph model.
