@@ -297,24 +297,89 @@ summary(step_cox)
     ## Wald test            = 195.2  on 10 df,   p=<2e-16
     ## Score (logrank) test = 254.9  on 10 df,   p=<2e-16
 
+``` r
+sw.cox_coef = step_cox |>
+  broom::tidy() |>
+  mutate(
+    astrid = case_when(
+      p.value < 0.001 ~ "***",
+      p.value >= 0.001 & p.value <= 0.01 ~ "**",
+      p.value >= 0.01 & p.value <= 0.05 ~ "*",
+      TRUE ~ ""
+    )
+  )
+
+sw.cox_coef |>
+  knitr::kable(
+    digits = 3,
+    col.names = c("term", "estimate", "std.error", "statistic", "p.value", ""),
+    caption = "Stepwise Cox Proportional Hazard Regression Model -- coefficients"
+  )
+```
+
+| term          | estimate | std.error | statistic | p.value |        |
+|:--------------|---------:|----------:|----------:|--------:|:-------|
+| edema_bin     |    0.476 |     0.231 |     2.058 |   0.040 | \*     |
+| albumin       |   -0.763 |     0.255 |    -2.992 |   0.003 | \*\*   |
+| copper        |    0.002 |     0.001 |     1.995 |   0.046 | \*     |
+| sgot          |    0.003 |     0.002 |     1.644 |   0.100 |        |
+| prothrombin   |    0.289 |     0.103 |     2.806 |   0.005 | \*\*   |
+| stage2        |    1.346 |     1.061 |     1.269 |   0.204 |        |
+| stage3        |    1.479 |     1.034 |     1.430 |   0.153 |        |
+| stage4        |    1.763 |     1.033 |     1.707 |   0.088 |        |
+| age_years     |    0.030 |     0.009 |     3.231 |   0.001 | \*\*   |
+| log_bilirubin |    0.715 |     0.121 |     5.908 |   0.000 | \*\*\* |
+
+Stepwise Cox Proportional Hazard Regression Model – coefficients
+
+``` r
+sw.cox_test = step_cox |>
+  broom::glance() |>
+  select(
+    n, nevent, statistic.wald, p.value.wald, logLik, AIC, BIC,
+  ) 
+
+sw.cox_test |>
+  knitr::kable(
+    digits = 3,
+    caption = "Stepwise Cox Proportional Hazard Regression Model -- Global Tests Results"
+  )
+```
+
+|   n | nevent | statistic.wald | p.value.wald |   logLik |      AIC |      BIC |
+|----:|-------:|---------------:|-------------:|---------:|---------:|---------:|
+| 306 |    123 |         195.21 |            0 | -524.311 | 1068.622 | 1096.744 |
+
+Stepwise Cox Proportional Hazard Regression Model – Global Tests Results
+
+``` r
+write.xlsx(
+  list(
+      coefficient = sw.cox_coef,
+      tests = sw.cox_test
+  ),
+  file = "table_output/stepwise_cox.xlsx"
+)
+```
+
 A Stepwise Cox Proportional Hazard regression was performed to identify
-the most parsimonious model that estimate subjects’ hazard of Cirrhosis.
-The model selection was based on Akaike’s Information Criterion (AIC).
-The final model achieved the lowest AIC of 1086.6, including the
-variables of Edema Presence, Albumin(mg/dl), Urine copper(ug/day), SGOT
-(U/ml), Prothrombin time (s), histologic stage of disease, age (years)
-and log-transformed serum Bilirubin (mg/dl) as predictors. Several
-variables showed significant associations (p \< 0.05) with the hazard
-function, while disease stages (all p-value \> 0.05) and SGOT (p-value
-\> 0.01) are weaker contributors to the model. The overall model shows
-significant discriminatory ability over subjects’ hazards with a
-concordance of 0.858. Global tests shows the model has a good fit (Wald
-test, p=\<2e-16).
+the most parsimonious model that estimates subjects’ hazard of
+Cirrhosis. The model selection was based on Akaike’s Information
+Criterion (AIC). The final model achieved the lowest AIC of 1068.622,
+including the variables of Edema Presence, Albumin(mg/dl), Urine
+copper(ug/day), SGOT (U/ml), Prothrombin time (s), histologic stage of
+disease, age (years) and log-transformed serum Bilirubin (mg/dl) as
+predictors. Several variables showed significant associations (p \<
+0.05) with the hazard function, while disease stages (all p-values\>
+0.05) and SGOT (p-value \> 0.01) are weaker contributors to the model.
+The overall model shows significant discriminatory ability over
+subjects’ hazards with a concordance of 0.858. Global tests show the
+model has a good fit (Wald test, p \<2e-16).
 
 The final model from stepwise selection further supported the results
 from the above data Cox ph model that drug is an insignificant
-predictor. Urine copper and SGOT, in addition, was kept in the stepwise
-Cox model, but was removed in the final proposed model.
+predictor. Urine copper and SGOT, in addition, were kept in the stepwise
+Cox model, but were removed in the final proposed model.
 
 ### Lasso Cox
 
@@ -373,62 +438,66 @@ plot(lasso_cv)
 ![](stepwise_cox_cx_files/figure-gfm/lasso-2.png)<!-- -->
 
 ``` r
-coef(lasso_cv, s = "lambda.min")
+coef_lasso_opt = coef(lasso_cv, s = "lambda.min")
+lasso_opt = data.frame(term = rownames(coef_lasso_opt), estimate_opt = as.numeric(coef_lasso_opt)) |>
+  mutate(
+    estimate_opt = case_when(
+      estimate_opt == 0 ~ "-",
+      TRUE ~ as.character(round(estimate_opt, 3))
+    )
+  )
+
+coef_lasso_1se = coef(lasso_cv, s = "lambda.1se")
+lasso_1se = data.frame(term = rownames(coef_lasso_1se), estimate_1se = as.numeric(coef_lasso_1se)) |>
+  mutate(
+    estimate_1se = case_when(
+      estimate_1se == 0 ~ "-",
+      TRUE ~ as.character(round(estimate_1se, 3))
+    )
+  )
+
+lasso.cox = left_join(lasso_opt, lasso_1se, by = "term")
+
+lasso.cox |>
+  knitr::kable()
 ```
 
-    ## 17 x 1 sparse Matrix of class "dgCMatrix"
-    ##                          1
-    ## drugPlacebo    .          
-    ## sexM           .          
-    ## ascitesY       0.266748672
-    ## hepatomegalyY  .          
-    ## spidersY       .          
-    ## edema_bin      0.300567715
-    ## albumin       -0.560719880
-    ## copper         0.001504712
-    ## alk_phos       .          
-    ## sgot           .          
-    ## platelets      .          
-    ## prothrombin    0.158063509
-    ## stage2         .          
-    ## stage3         .          
-    ## stage4         0.140786711
-    ## age_years      0.013367584
-    ## log_bilirubin  0.689920585
+| term          | estimate_opt | estimate_1se |
+|:--------------|:-------------|:-------------|
+| drugPlacebo   | \-           | \-           |
+| sexM          | \-           | \-           |
+| ascitesY      | 0.267        | \-           |
+| hepatomegalyY | \-           | \-           |
+| spidersY      | \-           | \-           |
+| edema_bin     | 0.301        | \-           |
+| albumin       | -0.561       | \-           |
+| copper        | 0.002        | \-           |
+| alk_phos      | \-           | \-           |
+| sgot          | \-           | \-           |
+| platelets     | \-           | \-           |
+| prothrombin   | 0.158        | \-           |
+| stage2        | \-           | \-           |
+| stage3        | \-           | \-           |
+| stage4        | 0.141        | \-           |
+| age_years     | 0.013        | \-           |
+| log_bilirubin | 0.69         | 0.464        |
 
 ``` r
-coef(lasso_cv, s = "lambda.1se")
+write.xlsx(
+  lasso.cox,
+  file = "table_output/lasso_cox.xlsx"
+) 
 ```
 
-    ## 17 x 1 sparse Matrix of class "dgCMatrix"
-    ##                       1
-    ## drugPlacebo   .        
-    ## sexM          .        
-    ## ascitesY      .        
-    ## hepatomegalyY .        
-    ## spidersY      .        
-    ## edema_bin     .        
-    ## albumin       .        
-    ## copper        .        
-    ## alk_phos      .        
-    ## sgot          .        
-    ## platelets     .        
-    ## prothrombin   .        
-    ## stage2        .        
-    ## stage3        .        
-    ## stage4        .        
-    ## age_years     .        
-    ## log_bilirubin 0.4643493
-
 Another Lasso Cox Proportional Hazard regression was performed to
-identify the most parsimonious model that estimate subjects’ hazard of
-Cirrhosis. The model selection was based on Penalty Parameter, lambda,
-under a 10 fold cross-validation. The final model achieved the penalty
-parameter of 0.071, including the variables of Ascites Presence, Edema
-Presence, Albumin(mg/dl), Urine copper(ug/day), Prothrombin time (s),
-histologic stage 4 of disease, age (years) and log-transformed serum
-Bilirubin (mg/dl) as predictors. Another simpler model was provided with
-the log-transformed serum Bilirubin (mg/dl) as the only predictor, where
+identify the most parsimonious model that estimates subjects’ hazard of
+Cirrhosis. The model selection was based on the Penalty Parameter,
+lambda. The final model achieved the penalty parameter of 0.071,
+including the variables of Ascites Presence, Edema Presence,
+Albumin(mg/dl), Urine copper(ug/day), Prothrombin time (s), histologic
+stage 4 of disease, age (years) and log-transformed serum Bilirubin
+(mg/dl) as predictors. Another simpler model was provided with the
+log-transformed serum Bilirubin (mg/dl) as the only predictor, where
 allows the largest penalty parameter at which the MSE is within one
 standard error of the smallest MSE, which is 0.224. The model with the
 smallest penalty parameter was considered due to its better performance

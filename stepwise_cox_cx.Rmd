@@ -21,6 +21,7 @@ library(dplyr)
 library(tidyr)
 library(survival)
 library(patchwork)
+library(openxlsx)
 
 library(glmnet) # for lasso
 library(rms)    # for nomogram
@@ -96,12 +97,52 @@ sw_null = coxph(
   data = cirrhosis_df)
 
 step_cox = MASS::stepAIC(sw_full, direction = "both", na.rm = TRUE)
+
 summary(step_cox)
+
+sw.cox_coef = step_cox |>
+  broom::tidy() |>
+  mutate(
+    astrid = case_when(
+      p.value < 0.001 ~ "***",
+      p.value >= 0.001 & p.value <= 0.01 ~ "**",
+      p.value >= 0.01 & p.value <= 0.05 ~ "*",
+      TRUE ~ ""
+    )
+  )
+
+sw.cox_coef |>
+  knitr::kable(
+    digits = 3,
+    col.names = c("term", "estimate", "std.error", "statistic", "p.value", ""),
+    caption = "Stepwise Cox Proportional Hazard Regression Model -- coefficients"
+  )
+
+sw.cox_test = step_cox |>
+  broom::glance() |>
+  select(
+    n, nevent, statistic.wald, p.value.wald, logLik, AIC, BIC,
+  ) 
+
+sw.cox_test |>
+  knitr::kable(
+    digits = 3,
+    caption = "Stepwise Cox Proportional Hazard Regression Model -- Global Tests Results"
+  )
+
+write.xlsx(
+  list(
+      coefficient = sw.cox_coef,
+      tests = sw.cox_test
+  ),
+  file = "table_output/stepwise_cox.xlsx"
+)
 ```
 
-A Stepwise Cox Proportional Hazard regression was performed to identify the most parsimonious model that estimate subjects' hazard of Cirrhosis. The model selection was based on Akaike’s Information Criterion (AIC). The final model achieved the lowest AIC of 1086.6, including the variables of Edema Presence, Albumin(mg/dl), Urine copper(ug/day), SGOT (U/ml), Prothrombin time (s), histologic stage of disease, age (years) and log-transformed serum Bilirubin (mg/dl) as predictors. Several variables showed significant associations (p < 0.05) with the hazard function, while disease stages (all p-value > 0.05) and SGOT (p-value > 0.01) are weaker contributors to the model. The overall model shows significant discriminatory ability over subjects' hazards with a concordance of 0.858. Global tests shows the model has a good fit (Wald test, p=<2e-16).
+A Stepwise Cox Proportional Hazard regression was performed to identify the most parsimonious model that estimates subjects' hazard of Cirrhosis. The model selection was based on Akaike’s Information Criterion (AIC). The final model achieved the lowest AIC of `r round(sw.cox_test$AIC, 3)`, including the variables of Edema Presence, Albumin(mg/dl), Urine copper(ug/day), SGOT (U/ml), Prothrombin time (s), histologic stage of disease, age (years) and log-transformed serum Bilirubin (mg/dl) as predictors. Several variables showed significant associations (p < 0.05) with the hazard function, while disease stages (all p-values> 0.05) and SGOT (p-value > 0.01) are weaker contributors to the model. The overall model shows significant discriminatory ability over subjects' hazards with a concordance of 0.858. Global tests show the model has a good fit (Wald test, p <2e-16).
 
-The final model from stepwise selection further supported the results from the above data Cox ph model that drug is an insignificant predictor. Urine copper and SGOT, in addition, was kept in the stepwise Cox model, but was removed in the final proposed model.
+The final model from stepwise selection further supported the results from the above data Cox ph model that drug is an insignificant predictor. Urine copper and SGOT, in addition, were kept in the stepwise Cox model, but were removed in the final proposed model.
+
 
 
 ### Lasso Cox
@@ -139,16 +180,41 @@ lasso_plot1 = lasso_fit |>
   geom_vline(xintercept = lambda_opt, color = "blue", size = 1.2) +
   theme_minimal() + 
   theme(legend.position = "none")
+
 lasso_plot1
 
 plot(lasso_cv)
 
-coef(lasso_cv, s = "lambda.min")
-coef(lasso_cv, s = "lambda.1se")
+coef_lasso_opt = coef(lasso_cv, s = "lambda.min")
+lasso_opt = data.frame(term = rownames(coef_lasso_opt), estimate_opt = as.numeric(coef_lasso_opt)) |>
+  mutate(
+    estimate_opt = case_when(
+      estimate_opt == 0 ~ "-",
+      TRUE ~ as.character(round(estimate_opt, 3))
+    )
+  )
 
+coef_lasso_1se = coef(lasso_cv, s = "lambda.1se")
+lasso_1se = data.frame(term = rownames(coef_lasso_1se), estimate_1se = as.numeric(coef_lasso_1se)) |>
+  mutate(
+    estimate_1se = case_when(
+      estimate_1se == 0 ~ "-",
+      TRUE ~ as.character(round(estimate_1se, 3))
+    )
+  )
+
+lasso.cox = left_join(lasso_opt, lasso_1se, by = "term")
+
+lasso.cox |>
+  knitr::kable()
+
+write.xlsx(
+  lasso.cox,
+  file = "table_output/lasso_cox.xlsx"
+) 
 ```
 
-Another Lasso Cox Proportional Hazard regression was performed to identify the most parsimonious model that estimate subjects' hazard of Cirrhosis. The model selection was based on Penalty Parameter, lambda, under a 10 fold cross-validation. The final model achieved the penalty parameter of `r round(lambda_opt, 3)`, including the variables of Ascites Presence, Edema Presence, Albumin(mg/dl), Urine copper(ug/day),  Prothrombin time (s), histologic stage 4 of disease, age (years) and log-transformed serum Bilirubin (mg/dl) as predictors. Another simpler model was provided with the log-transformed serum Bilirubin (mg/dl) as the only predictor, where allows the largest penalty parameter at which the MSE is within one standard error of the smallest MSE, which is `r round(lambda_1se, 3)`. The model with the smallest penalty parameter was considered due to its better performance in estimation.
+Another Lasso Cox Proportional Hazard regression was performed to identify the most parsimonious model that estimates subjects' hazard of Cirrhosis. The model selection was based on the Penalty Parameter, lambda. The final model achieved the penalty parameter of `r round(lambda_opt, 3)`, including the variables of Ascites Presence, Edema Presence, Albumin(mg/dl), Urine copper(ug/day),  Prothrombin time (s), histologic stage 4 of disease, age (years) and log-transformed serum Bilirubin (mg/dl) as predictors. Another simpler model was provided with the log-transformed serum Bilirubin (mg/dl) as the only predictor, where allows the largest penalty parameter at which the MSE is within one standard error of the smallest MSE, which is `r round(lambda_1se, 3)`. The model with the smallest penalty parameter was considered due to its better performance in estimation.
 
 The final model from Lasso selection further supported the results from the above data Cox Proportional Hazard model that drug is an insignificant predictor. Ascites Presence and Urine copper, in addition, was kept in the Lasso Cox model, but was removed in the final proposed model.
 
@@ -205,7 +271,6 @@ title(
   main ="Nomogram for Cirrhosis Survival",
   sub = "1-, 3-, and 5-year survival predictions"
 )
-
 ```
 
 The figure above is the nomogram generated to estimate the patients 1-, 3- and 5- year with predictors from the final Cox ph model. The nomogram produces similar results where treatment types are no strong predictors in the model.
