@@ -3,8 +3,8 @@ title: "stepwise_cox_cx"
 author: "Chuyuan XU"
 date: "`r Sys.Date()`"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -20,6 +20,7 @@ library(webshot2)
 library(dplyr)
 library(tidyr)
 library(survival)
+library(patchwork)
 
 library(glmnet) # for lasso
 library(rms)    # for nomogram
@@ -104,8 +105,8 @@ The final model from stepwise selection further supported the results from the a
 
 
 ### Lasso Cox
-```{r lasso_cx}
-# manually create dummy variable for stage 
+```{r lasso}
+set.seed(1234)
 x = model.matrix(
     ~ drug + 
       sex + ascites + hepatomegaly + 
@@ -117,24 +118,37 @@ x = model.matrix(
 
 y = Surv(cirrhosis_df$n_days, cirrhosis_df$event)
 
-lasso = cv.glmnet(
-  x, 
-  y, 
-  family = "cox",
-  alpha = 1,
-  nfolds = 10)
+lambda = 10^(seq(-2, 0, 0.05))
 
-lasso$lambda.min      # lambda giving minimum cross-validation error
-lasso_min = coef(lasso, s = "lambda.min")
-lasso_min
+lasso_fit =
+  glmnet(x, y, family = "cox", lambda = lambda)
 
-lasso$index
+lasso_cv =
+  cv.glmnet(x, y, family = "cox", lambda = lambda, alpha = 1)
 
-plot(lasso)
+lambda_opt = lasso_cv[["lambda.min"]]
+lambda_1se = lasso_cv[["lambda.1se"]]
+
+lasso_plot1 = lasso_fit |> 
+  broom::tidy() |> 
+  select(term, lambda, estimate) |> 
+  complete(term, lambda, fill = list(estimate = 0) ) |> 
+  filter(term != "(Intercept)") |> 
+  ggplot(aes(x = lambda, y = estimate, group = term, color = term)) + 
+  geom_path() + 
+  geom_vline(xintercept = lambda_opt, color = "blue", size = 1.2) +
+  theme_minimal() + 
+  theme(legend.position = "none")
+lasso_plot1
+
+plot(lasso_cv)
+
+coef(lasso_cv, s = "lambda.min")
+coef(lasso_cv, s = "lambda.1se")
 
 ```
 
-Another Lasso Cox Proportional Hazard regression was performed to identify the most parsimonious model that estimate subjects' hazard of Cirrhosis. The model selection was based on Penalty PArameter, lambda, under a 10 fold cross-validation. The final model achieved the penalty parameter of 0.06255, including the variables of Ascites Presence, Edema Presence, Albumin(mg/dl), Urine copper(ug/day),  Prothrombin time (s), histologic stage 4 of disease, age (years) and log-transformed serum Bilirubin (mg/dl) as predictors. Another simpler model was provided with the log-transformed serum Bilirubin (mg/dl) as the only predictor, where allows the largest penalty parameter at which the MSE is within one standard error of the smallest MSE. The model with the smallest penalty parameter was considered due to its better performance in estimation.
+Another Lasso Cox Proportional Hazard regression was performed to identify the most parsimonious model that estimate subjects' hazard of Cirrhosis. The model selection was based on Penalty Parameter, lambda, under a 10 fold cross-validation. The final model achieved the penalty parameter of `r round(lambda_opt, 3)`, including the variables of Ascites Presence, Edema Presence, Albumin(mg/dl), Urine copper(ug/day),  Prothrombin time (s), histologic stage 4 of disease, age (years) and log-transformed serum Bilirubin (mg/dl) as predictors. Another simpler model was provided with the log-transformed serum Bilirubin (mg/dl) as the only predictor, where allows the largest penalty parameter at which the MSE is within one standard error of the smallest MSE, which is `r round(lambda_1se, 3)`. The model with the smallest penalty parameter was considered due to its better performance in estimation.
 
 The final model from Lasso selection further supported the results from the above data Cox Proportional Hazard model that drug is an insignificant predictor. Ascites Presence and Urine copper, in addition, was kept in the Lasso Cox model, but was removed in the final proposed model.
 
@@ -172,6 +186,7 @@ nomo <- nomogram(
     ),
   funlabel = c("1-year Survival", "3-year Survival", "5-year Survival")
   )
+
 
 plot(
   nomo,
