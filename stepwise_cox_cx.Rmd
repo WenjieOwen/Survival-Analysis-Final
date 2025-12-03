@@ -2,8 +2,8 @@
 title: "stepwise_cox_cx"
 author: "Chuyuan XU"
 date: "`r Sys.Date()`"
-output:
-  html_document: default
+output: 
+  github_document: default
   pdf_document: default
 ---
 
