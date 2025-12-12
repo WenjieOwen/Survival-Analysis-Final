@@ -1,7 +1,7 @@
 stepwise_cox_cx
 ================
 Chuyuan XU
-2025-12-03
+2025-12-12
 
 # Data Preparation
 
@@ -492,16 +492,17 @@ write.xlsx(
 Another Lasso Cox Proportional Hazard regression was performed to
 identify the most parsimonious model that estimates subjects’ hazard of
 Cirrhosis. The model selection was based on the Penalty Parameter,
-lambda. The final model achieved the penalty parameter of 0.071,
-including the variables of Ascites Presence, Edema Presence,
-Albumin(mg/dl), Urine copper(ug/day), Prothrombin time (s), histologic
-stage 4 of disease, age (years) and log-transformed serum Bilirubin
-(mg/dl) as predictors. Another simpler model was provided with the
-log-transformed serum Bilirubin (mg/dl) as the only predictor, where
-allows the largest penalty parameter at which the MSE is within one
-standard error of the smallest MSE, which is 0.224. The model with the
-smallest penalty parameter was considered due to its better performance
-in estimation.
+lambda. Cross-validation further selects the lambda that generalizes the
+best, and determines variables to develop the final model. The final
+model achieved the penalty parameter of 0.071, including the variables
+of Ascites Presence, Edema Presence, Albumin(mg/dl), Urine
+copper(ug/day), Prothrombin time (s), histologic stage 4 of disease, age
+(years) and log-transformed serum Bilirubin (mg/dl) as predictors.
+Another simpler model was provided with the log-transformed serum
+Bilirubin (mg/dl) as the only predictor, where allows the largest
+penalty parameter at which the MSE is within one standard error of the
+smallest MSE, which is 0.224. The model with the smallest penalty
+parameter was considered due to its better performance in estimation.
 
 The final model from Lasso selection further supported the results from
 the above data Cox Proportional Hazard model that drug is an
@@ -567,7 +568,19 @@ title(
 
 ![](stepwise_cox_cx_files/figure-gfm/nomgram_cx-1.png)<!-- -->
 
-The figure above is the nomogram generated to estimate the patients 1-,
-3- and 5- year with predictors from the final Cox ph model. The nomogram
-produces similar results where treatment types are no strong predictors
-in the model.
+The figure shows the nomogram generated to estimate patients’ 1-, 3-,
+and 5-year survival based on the final Cox PH survival prediction model.
+The nomogram produces similar results when treatment types are not
+strong predictors in the model. It translates the regression
+coefficients into a point-based scoring system, allowing clinicians to
+estimate 1-, 3-, and 5-year survival probabilities for patients with
+cirrhosis. Each predictor in the model (drug assignment, age,
+log-bilirubin, albumin, prothrombin time, presence of edema, and disease
+stage) has a scale that assigns a value to a specific hazard point, as
+indicated by the scale at the top of the figure. By summing a patient’s
+points for each variable, therapists can obtain a total score and use it
+to estimate 1-, 3-, and 5-year survival probabilities, with higher total
+point values indicating lower predicted survival. Nomograms provide an
+intuitive and feasible method for applying the survival prediction model
+and enhance clinical decision-making by offering quick, individualized
+risk estimates.
