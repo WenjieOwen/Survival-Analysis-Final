@@ -2,14 +2,18 @@
 title: "stepwise_cox_cx"
 author: "Chuyuan XU"
 date: "`r Sys.Date()`"
-output: 
-  github_document: default
+output:
   pdf_document: default
+  github_document: default
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE) # keep it for now for easier checking
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
 
+```{r packages}
 library(tidyverse)
 library(skimr)
 library(janitor)
@@ -97,8 +101,6 @@ sw_null = coxph(
   data = cirrhosis_df)
 
 step_cox = MASS::stepAIC(sw_full, direction = "both", na.rm = TRUE)
-
-summary(step_cox)
 
 sw.cox_coef = step_cox |>
   broom::tidy() |>
