@@ -1,0 +1,727 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={descriptive\_and\_exploratory\_analysis},
+  pdfauthor={Yixin Zheng},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{descriptive\_and\_exploratory\_analysis}
+\author{Yixin Zheng}
+\date{2025-11-25}
+
+\begin{document}
+\maketitle
+
+\section{Data Preparation}\label{data-preparation}
+
+\subsection{Data Wrangling (wenjie)}\label{data-wrangling-wenjie}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Import data \& data cleaning }
+\NormalTok{cirrhosis }\OtherTok{\textless{}{-}} \FunctionTok{read.csv}\NormalTok{(}\StringTok{"data/cirrhosis.csv"}\NormalTok{) }\SpecialCharTok{|\textgreater{}} \FunctionTok{clean\_names}\NormalTok{()}
+
+\CommentTok{\# Status convert to event indicator (1 = death, 0 = censored)}
+\NormalTok{cirrhosis }\OtherTok{\textless{}{-}}\NormalTok{ cirrhosis }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{event =} \FunctionTok{case\_when}\NormalTok{(}
+\NormalTok{      status }\SpecialCharTok{==} \StringTok{"D"} \SpecialCharTok{\textasciitilde{}} \DecValTok{1}\NormalTok{,}
+\NormalTok{      status }\SpecialCharTok{\%in\%} \FunctionTok{c}\NormalTok{(}\StringTok{"C"}\NormalTok{, }\StringTok{"CL"}\NormalTok{) }\SpecialCharTok{\textasciitilde{}} \DecValTok{0}\NormalTok{,}
+      \ConstantTok{TRUE} \SpecialCharTok{\textasciitilde{}} \ConstantTok{NA\_real\_}
+\NormalTok{    ),}
+    \AttributeTok{sex =} \FunctionTok{factor}\NormalTok{(sex),}
+    \AttributeTok{drug =} \FunctionTok{factor}\NormalTok{(drug),}
+    \AttributeTok{ascites =} \FunctionTok{factor}\NormalTok{(ascites),}
+    \AttributeTok{hepatomegaly =} \FunctionTok{factor}\NormalTok{(hepatomegaly),}
+    \AttributeTok{spiders =} \FunctionTok{factor}\NormalTok{(spiders),}
+    \AttributeTok{edema =} \FunctionTok{factor}\NormalTok{(edema, }\AttributeTok{levels =} \FunctionTok{c}\NormalTok{(}\StringTok{"N"}\NormalTok{, }\StringTok{"S"}\NormalTok{, }\StringTok{"Y"}\NormalTok{), }\AttributeTok{ordered =} \ConstantTok{TRUE}\NormalTok{),}
+    \AttributeTok{stage =} \FunctionTok{factor}\NormalTok{(stage) }\CommentTok{\# Yixin: "Stage: histologic stage of disease (1, 2, 3, or 4)"}
+\NormalTok{  )}
+
+\NormalTok{cirrhosis }\OtherTok{\textless{}{-}}\NormalTok{ cirrhosis }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{age\_years =}\NormalTok{ age }\SpecialCharTok{/} \FloatTok{365.25}\NormalTok{)}
+
+\FunctionTok{skim}\NormalTok{(cirrhosis)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}ll@{}}
+\caption{Data summary}\tabularnewline
+\toprule\noalign{}
+\endfirsthead
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Name & cirrhosis \\
+Number of rows & 418 \\
+Number of columns & 22 \\
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ & \\
+Column type frequency: & \\
+character & 1 \\
+factor & 7 \\
+numeric & 14 \\
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ & \\
+Group variables & None \\
+\end{longtable}
+
+\textbf{Variable type: character}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1944}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1389}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1944}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0556}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0556}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0833}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1528}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+skim\_variable
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+n\_missing
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+complete\_rate
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+min
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+max
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+empty
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+n\_unique
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+whitespace
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+status & 0 & 1 & 1 & 2 & 0 & 3 & 0 \\
+\end{longtable}
+
+\textbf{Variable type: factor}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1190}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0952}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1071}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.3452}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+skim\_variable
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+n\_missing
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+complete\_rate
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+ordered
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+n\_unique
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+top\_counts
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+drug & 106 & 0.75 & FALSE & 2 & D-p: 158, Pla: 154 \\
+sex & 0 & 1.00 & FALSE & 2 & F: 374, M: 44 \\
+ascites & 106 & 0.75 & FALSE & 2 & N: 288, Y: 24 \\
+hepatomegaly & 106 & 0.75 & FALSE & 2 & Y: 160, N: 152 \\
+spiders & 106 & 0.75 & FALSE & 2 & N: 222, Y: 90 \\
+edema & 0 & 1.00 & TRUE & 3 & N: 354, S: 44, Y: 20 \\
+stage & 6 & 0.99 & FALSE & 4 & 3: 155, 4: 144, 2: 92, 1: 21 \\
+\end{longtable}
+
+\textbf{Variable type: numeric}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.1333}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0952}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.1333}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0857}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0762}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0762}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0857}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0857}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0857}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0857}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0571}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+skim\_variable
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+n\_missing
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+complete\_rate
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+mean
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+sd
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p0
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p25
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p50
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p75
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p100
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+hist
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+id & 0 & 1.00 & 209.50 & 120.81 & 1.00 & 105.25 & 209.50 & 313.75 &
+418.00 & ▇▇▇▇▇ \\
+n\_days & 0 & 1.00 & 1917.78 & 1104.67 & 41.00 & 1092.75 & 1730.00 &
+2613.50 & 4795.00 & ▅▇▆▃▂ \\
+age & 0 & 1.00 & 18533.35 & 3815.85 & 9598.00 & 15644.50 & 18628.00 &
+21272.50 & 28650.00 & ▂▆▇▅▁ \\
+bilirubin & 0 & 1.00 & 3.22 & 4.41 & 0.30 & 0.80 & 1.40 & 3.40 & 28.00 &
+▇▁▁▁▁ \\
+cholesterol & 134 & 0.68 & 369.51 & 231.94 & 120.00 & 249.50 & 309.50 &
+400.00 & 1775.00 & ▇▁▁▁▁ \\
+albumin & 0 & 1.00 & 3.50 & 0.42 & 1.96 & 3.24 & 3.53 & 3.77 & 4.64 &
+▁▂▇▇▁ \\
+copper & 108 & 0.74 & 97.65 & 85.61 & 4.00 & 41.25 & 73.00 & 123.00 &
+588.00 & ▇▂▁▁▁ \\
+alk\_phos & 106 & 0.75 & 1982.66 & 2140.39 & 289.00 & 871.50 & 1259.00 &
+1980.00 & 13862.40 & ▇▁▁▁▁ \\
+sgot & 106 & 0.75 & 122.56 & 56.70 & 26.35 & 80.60 & 114.70 & 151.90 &
+457.25 & ▇▇▁▁▁ \\
+tryglicerides & 136 & 0.67 & 124.70 & 65.15 & 33.00 & 84.25 & 108.00 &
+151.00 & 598.00 & ▇▂▁▁▁ \\
+platelets & 11 & 0.97 & 257.02 & 98.33 & 62.00 & 188.50 & 251.00 &
+318.00 & 721.00 & ▅▇▃▁▁ \\
+prothrombin & 2 & 1.00 & 10.73 & 1.02 & 9.00 & 10.00 & 10.60 & 11.10 &
+18.00 & ▇▅▁▁▁ \\
+event & 0 & 1.00 & 0.39 & 0.49 & 0.00 & 0.00 & 0.00 & 1.00 & 1.00 &
+▇▁▁▁▅ \\
+age\_years & 0 & 1.00 & 50.74 & 10.45 & 26.28 & 42.83 & 51.00 & 58.24 &
+78.44 & ▂▆▇▅▁ \\
+\end{longtable}
+
+\subsection{Data Cleaning (yixin)}\label{data-cleaning-yixin}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Yixin: restrict to randomized trial patients (non{-}missing drug)}
+\NormalTok{cirr\_trial }\OtherTok{\textless{}{-}}\NormalTok{ cirrhosis }\SpecialCharTok{|\textgreater{}} \FunctionTok{filter}\NormalTok{(}\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(drug))}
+
+\CommentTok{\# Yixin: store counts for text/reporting}
+\NormalTok{n\_total }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(cirrhosis)}
+\NormalTok{n\_trial }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(cirr\_trial)}
+\NormalTok{n\_nonrand }\OtherTok{\textless{}{-}}\NormalTok{ n\_total }\SpecialCharTok{{-}}\NormalTok{ n\_trial}
+
+\CommentTok{\# Yixin: baseline variables that will go into the tables/tests}
+\NormalTok{baseline\_vars }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"age\_years"}\NormalTok{, }\StringTok{"sex"}\NormalTok{, }\StringTok{"drug"}\NormalTok{, }\StringTok{"bilirubin"}\NormalTok{, }\StringTok{"albumin"}\NormalTok{, }
+                   \StringTok{"prothrombin"}\NormalTok{, }\StringTok{"ascites"}\NormalTok{, }\StringTok{"hepatomegaly"}\NormalTok{, }\StringTok{"spiders"}\NormalTok{, }\StringTok{"edema"}\NormalTok{)}
+
+\CommentTok{\# Yixin: complete{-}case dataset for baseline comparisons}
+\NormalTok{cirr\_complete }\OtherTok{\textless{}{-}}\NormalTok{ cirr\_trial }\SpecialCharTok{|\textgreater{}} \FunctionTok{drop\_na}\NormalTok{(}\FunctionTok{all\_of}\NormalTok{(baseline\_vars))}
+\end{Highlighting}
+\end{Shaded}
+
+\section{Descriptive and Exploratory
+Analysis}\label{descriptive-and-exploratory-analysis}
+
+We assessed baseline balance between the Placebo and D-penicillamine
+groups using summaries of key demographic and clinical variables. \#\#
+Basic EDA (wenjie)
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{cirrhosis }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{count}\NormalTok{(status) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ status, }\AttributeTok{y =}\NormalTok{ n, }\AttributeTok{fill =}\NormalTok{ status)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_col}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{title =} \StringTok{"Distribution of Survival Status"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\pandocbounded{\includegraphics[keepaspectratio]{descriptive_and_exploratory_analysis_files/figure-latex/wenjie_basic_EDA-1.pdf}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{ggplot}\NormalTok{(cirrhosis, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ status, }\AttributeTok{y =}\NormalTok{ age, }\AttributeTok{fill =}\NormalTok{ status)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{title =} \StringTok{"Age Distribution by Survival Status"}\NormalTok{, }\AttributeTok{y =} \StringTok{"Age (in days)"}\NormalTok{, }\AttributeTok{x =} \StringTok{"Status"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\pandocbounded{\includegraphics[keepaspectratio]{descriptive_and_exploratory_analysis_files/figure-latex/wenjie_basic_EDA-2.pdf}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{cirrhosis }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{pivot\_longer}\NormalTok{(}\AttributeTok{cols =} \FunctionTok{c}\NormalTok{(albumin, bilirubin), }\AttributeTok{names\_to =} \StringTok{"marker"}\NormalTok{, }\AttributeTok{values\_to =} \StringTok{"value"}\NormalTok{) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ status, }\AttributeTok{y =}\NormalTok{ value, }\AttributeTok{fill =}\NormalTok{ status)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{facet\_wrap}\NormalTok{(}\SpecialCharTok{\textasciitilde{}}\NormalTok{marker, }\AttributeTok{scales =} \StringTok{"free\_y"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{title =} \StringTok{"Key Lab Markers by Survival Status"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\pandocbounded{\includegraphics[keepaspectratio]{descriptive_and_exploratory_analysis_files/figure-latex/wenjie_basic_EDA-3.pdf}}
+
+\subsection{Continuous Baseline Variables
+(yixin)}\label{continuous-baseline-variables-yixin}
+
+For continuous baseline variables, we compared the two treatment groups
+using both: Two-sample t-tests (for differences in mean values), and
+Wilcoxon rank-sum tests (nonparametric robustness checks). The
+corresponding hypotheses were: \[
+\begin{aligned}
+H_{0}:~& \mu_{\text{Placebo}} = \mu_{\text{Dpen}} \\
+H_{1}:~& \mu_{\text{Placebo}} \neq \mu_{\text{Dpen}}
+\end{aligned}
+\]
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Yixin: baseline tables + hypothesis tests by treatment group}
+\CommentTok{\# randomized patients only (cirr\_trial), using cirr\_complete for continuous vars.}
+
+\CommentTok{\# Yixin: we choose clinically relevant continuous baseline variables with minimal missingness.}
+\CommentTok{\# Including variables like copper or cholesterol would greatly reduce complete{-}case sample size ,}
+\CommentTok{\# so we follow the Mayo PBC literature (Dickson et al.) and summarize only key prognostic markers.}
+\NormalTok{cont\_vars }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"age\_years"}\NormalTok{, }\StringTok{"bilirubin"}\NormalTok{, }\StringTok{"albumin"}\NormalTok{, }\StringTok{"prothrombin"}\NormalTok{)}
+
+\NormalTok{cont\_summary }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(x) \{}
+\NormalTok{  mean\_x }\OtherTok{\textless{}{-}} \FunctionTok{mean}\NormalTok{(x, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{  sd\_x   }\OtherTok{\textless{}{-}} \FunctionTok{sd}\NormalTok{(x, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{  med\_x  }\OtherTok{\textless{}{-}} \FunctionTok{median}\NormalTok{(x, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{  q1\_x   }\OtherTok{\textless{}{-}} \FunctionTok{quantile}\NormalTok{(x, }\FloatTok{0.25}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{  q3\_x   }\OtherTok{\textless{}{-}} \FunctionTok{quantile}\NormalTok{(x, }\FloatTok{0.75}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)}
+  
+  \FunctionTok{list}\NormalTok{(}
+    \AttributeTok{mean =}\NormalTok{ mean\_x,}
+    \AttributeTok{sd   =}\NormalTok{ sd\_x,}
+    \AttributeTok{med  =}\NormalTok{ med\_x,}
+    \AttributeTok{q1   =}\NormalTok{ q1\_x,}
+    \AttributeTok{q3   =}\NormalTok{ q3\_x}
+\NormalTok{  )}
+\NormalTok{  \}}
+
+\NormalTok{baseline\_cont }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(cont\_vars, }\ControlFlowTok{function}\NormalTok{(v) \{}
+\NormalTok{  x\_placebo }\OtherTok{\textless{}{-}}\NormalTok{ cirr\_complete }\SpecialCharTok{|\textgreater{}} \CommentTok{\# Yixin: extract values by treatment group from complete{-}case dataset}
+    \FunctionTok{filter}\NormalTok{(drug }\SpecialCharTok{==} \StringTok{"Placebo"}\NormalTok{) }\SpecialCharTok{|\textgreater{}}
+    \FunctionTok{pull}\NormalTok{(}\SpecialCharTok{!!}\FunctionTok{sym}\NormalTok{(v))}
+  
+\NormalTok{  x\_dpen }\OtherTok{\textless{}{-}}\NormalTok{ cirr\_complete }\SpecialCharTok{|\textgreater{}}
+    \FunctionTok{filter}\NormalTok{(drug }\SpecialCharTok{==} \StringTok{"D{-}penicillamine"}\NormalTok{) }\SpecialCharTok{|\textgreater{}}
+    \FunctionTok{pull}\NormalTok{(}\SpecialCharTok{!!}\FunctionTok{sym}\NormalTok{(v))}
+  
+\NormalTok{  s0 }\OtherTok{\textless{}{-}} \FunctionTok{cont\_summary}\NormalTok{(x\_placebo)  }\CommentTok{\# Yixin: Placebo summary}
+\NormalTok{  s1 }\OtherTok{\textless{}{-}} \FunctionTok{cont\_summary}\NormalTok{(x\_dpen)     }\CommentTok{\# Yixin: D{-}penicillamine summary}
+  
+\CommentTok{\# Yixin: two{-}sample t{-}test and Wilcoxon rank{-}sum test (D{-}penicillamine vs Placebo)}
+\NormalTok{  t\_res }\OtherTok{\textless{}{-}} \FunctionTok{t.test}\NormalTok{(x\_dpen, x\_placebo, }\AttributeTok{var.equal =} \ConstantTok{FALSE}\NormalTok{)}
+\NormalTok{  w\_res }\OtherTok{\textless{}{-}} \FunctionTok{wilcox.test}\NormalTok{(x\_dpen, x\_placebo, }\AttributeTok{exact =} \ConstantTok{FALSE}\NormalTok{)}
+  
+  \FunctionTok{tibble}\NormalTok{(}
+    \AttributeTok{Variable =}\NormalTok{ v,}
+    \AttributeTok{Placebo\_mean\_SD =} \FunctionTok{sprintf}\NormalTok{(}\StringTok{"\%.2f (\%.2f)"}\NormalTok{, s0}\SpecialCharTok{$}\NormalTok{mean, s0}\SpecialCharTok{$}\NormalTok{sd),}
+    \AttributeTok{Dpen\_mean\_SD =} \FunctionTok{sprintf}\NormalTok{(}\StringTok{"\%.2f (\%.2f)"}\NormalTok{, s1}\SpecialCharTok{$}\NormalTok{mean, s1}\SpecialCharTok{$}\NormalTok{sd),}
+    \AttributeTok{Placebo\_median\_IQR =} \FunctionTok{sprintf}\NormalTok{(}\StringTok{"\%.2f (\%.2f, \%.2f)"}\NormalTok{, s0}\SpecialCharTok{$}\NormalTok{med, s0}\SpecialCharTok{$}\NormalTok{q1, s0}\SpecialCharTok{$}\NormalTok{q3),}
+    \AttributeTok{Dpen\_median\_IQR =} \FunctionTok{sprintf}\NormalTok{(}\StringTok{"\%.2f (\%.2f, \%.2f)"}\NormalTok{, s1}\SpecialCharTok{$}\NormalTok{med, s1}\SpecialCharTok{$}\NormalTok{q1, s1}\SpecialCharTok{$}\NormalTok{q3),}
+    \AttributeTok{t\_test\_p\_value =}\NormalTok{ t\_res}\SpecialCharTok{$}\NormalTok{p.value,}
+    \AttributeTok{wilcoxon\_rank\_sum\_p\_value =}\NormalTok{ w\_res}\SpecialCharTok{$}\NormalTok{p.value)}
+\NormalTok{  \}) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{bind\_rows}\NormalTok{()}
+
+\CommentTok{\# Yixin: replace variable codes with full names for the table}
+\NormalTok{baseline\_cont }\OtherTok{\textless{}{-}}\NormalTok{ baseline\_cont }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{Variable =}\NormalTok{ dplyr}\SpecialCharTok{::}\FunctionTok{recode}\NormalTok{(}
+\NormalTok{      Variable,}
+      \AttributeTok{age\_years   =} \StringTok{"Age (years)"}\NormalTok{,}
+      \AttributeTok{bilirubin   =} \StringTok{"Serum bilirubin (mg/dL)"}\NormalTok{,}
+      \AttributeTok{albumin     =} \StringTok{"Albumin (g/dL)"}\NormalTok{,}
+      \AttributeTok{prothrombin =} \StringTok{"Prothrombin time (seconds)"}
+\NormalTok{      )}
+\NormalTok{    )}
+
+\CommentTok{\# Yixin: column labels for the table header}
+\FunctionTok{colnames}\NormalTok{(baseline\_cont) }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}
+  \StringTok{"Baseline variable"}\NormalTok{,}
+  \StringTok{"Placebo mean (SD)"}\NormalTok{,}
+  \StringTok{"D{-}penicillamine mean (SD)"}\NormalTok{,}
+  \StringTok{"Placebo median (IQR)"}\NormalTok{,}
+  \StringTok{"D{-}penicillamine median (IQR)"}\NormalTok{,}
+  \StringTok{"t{-}test p{-}value"}\NormalTok{,}
+  \StringTok{"Wilcoxon p{-}value"}
+\NormalTok{  )}
+
+\CommentTok{\# Yixin: final baseline table for continuous variables}
+\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(}
+\NormalTok{  baseline\_cont,}
+  \AttributeTok{digits =} \DecValTok{3}\NormalTok{,}
+  \AttributeTok{caption =} \StringTok{"Baseline continuous variables by treatment group (randomized complete cases)"}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1765}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1176}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1699}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1373}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1895}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0980}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1111}}@{}}
+\caption{Baseline continuous variables by treatment group (randomized
+complete cases)}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Baseline variable
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Placebo mean (SD)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+D-penicillamine mean (SD)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Placebo median (IQR)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+D-penicillamine median (IQR)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+t-test p-value
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Wilcoxon p-value
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Baseline variable
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Placebo mean (SD)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+D-penicillamine mean (SD)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Placebo median (IQR)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+D-penicillamine median (IQR)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+t-test p-value
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Wilcoxon p-value
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Age (years) & 48.58 (9.96) & 51.42 (11.01) & 48.11 (41.43, 55.80) &
+51.93 (42.98, 58.90) & 0.018 & 0.020 \\
+Serum bilirubin (mg/dL) & 3.65 (5.28) & 2.87 (3.63) & 1.30 (0.72, 3.60)
+& 1.40 (0.80, 3.20) & 0.133 & 0.842 \\
+Albumin (g/dL) & 3.52 (0.40) & 3.52 (0.44) & 3.54 (3.34, 3.78) & 3.56
+(3.21, 3.83) & 0.874 & 0.951 \\
+Prothrombin time (seconds) & 10.80 (1.14) & 10.65 (0.85) & 10.60 (10.00,
+11.40) & 10.60 (10.03, 11.00) & 0.199 & 0.588 \\
+\end{longtable}
+
+From table above, we see that, for these 4 key continuous baseline
+variables, only age has a statistically significant difference between
+treatment groups (t-test \(p \approx 0.018\); Wilcoxon
+\(p \approx 0.020\)), meaning that patients in the D-penicillamine group
+were slightly older at baseline. For bilirubin, albumin, and prothrombin
+time, we did not reject the null hypothesis as the p-values obatined
+were large. Overall, continuous variables are pretty balanced between
+treatment groups beside age.
+
+\subsection{Categorical Baseline Variables
+(yixin)}\label{categorical-baseline-variables-yixin}
+
+For categorical baseline variables, we evaluated group differences
+using: Pearson's chi-squared test, when all expected cell counts were
+adequate Fisher's exact test, when sparse cells were present. the
+corresponding hypotheses were: \[
+\begin{aligned}
+H_{0}:~& P(X = k \mid \text{Placebo}) = P(X = k \mid \text{Dpen}) 
+\quad \text{for all } k, \\[6pt]
+H_{1}:~& \exists\, k \text{ such that } 
+P(X = k \mid \text{Placebo}) \neq P(X = k \mid \text{Dpen})
+\end{aligned}
+\]
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Yixin: use the randomized dataset, drop NAs}
+\NormalTok{cat\_vars }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"sex"}\NormalTok{, }\StringTok{"ascites"}\NormalTok{, }\StringTok{"hepatomegaly"}\NormalTok{, }\StringTok{"spiders"}\NormalTok{, }\StringTok{"edema"}\NormalTok{, }\StringTok{"stage"}\NormalTok{)}
+
+\NormalTok{baseline\_cat }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(cat\_vars, }\ControlFlowTok{function}\NormalTok{(v) \{}
+\NormalTok{  dat\_v }\OtherTok{\textless{}{-}}\NormalTok{ cirr\_trial }\SpecialCharTok{|\textgreater{}}
+    \FunctionTok{select}\NormalTok{(drug, }\SpecialCharTok{!!}\FunctionTok{sym}\NormalTok{(v)) }\SpecialCharTok{|\textgreater{}}
+    \FunctionTok{drop\_na}\NormalTok{()  }\CommentTok{\# Yixin: remove missing for drugs only}
+  
+\NormalTok{  tab  }\OtherTok{\textless{}{-}} \FunctionTok{table}\NormalTok{(dat\_v[[v]], dat\_v}\SpecialCharTok{$}\NormalTok{drug)}
+\NormalTok{  prop }\OtherTok{\textless{}{-}} \FunctionTok{prop.table}\NormalTok{(tab, }\AttributeTok{margin =} \DecValTok{2}\NormalTok{)  }\CommentTok{\# column \% within each treatment group}
+  
+  \CommentTok{\# Yixin: choose Pearson chi{-}squared if all expected counts are reasonable, otherwise choose Fisher}
+  \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{any}\NormalTok{(tab }\SpecialCharTok{\textless{}} \DecValTok{5}\NormalTok{)) \{}
+\NormalTok{    test }\OtherTok{\textless{}{-}} \FunctionTok{fisher.test}\NormalTok{(tab)}
+\NormalTok{    test\_name }\OtherTok{\textless{}{-}} \StringTok{"Fisher\textquotesingle{}s exact"}
+\NormalTok{  \} }\ControlFlowTok{else}\NormalTok{ \{}
+\NormalTok{    test }\OtherTok{\textless{}{-}} \FunctionTok{chisq.test}\NormalTok{(tab, }\AttributeTok{correct =} \ConstantTok{FALSE}\NormalTok{)}
+\NormalTok{    test\_name }\OtherTok{\textless{}{-}} \StringTok{"Chi{-}squared"}
+\NormalTok{  \}}
+  
+\NormalTok{  df }\OtherTok{\textless{}{-}} \FunctionTok{as.data.frame}\NormalTok{(tab)}
+\NormalTok{  df}\SpecialCharTok{$}\NormalTok{Percent }\OtherTok{\textless{}{-}} \FunctionTok{round}\NormalTok{(}\DecValTok{100} \SpecialCharTok{*} \FunctionTok{as.vector}\NormalTok{(prop), }\DecValTok{1}\NormalTok{)}
+\NormalTok{  df}\SpecialCharTok{$}\NormalTok{Label   }\OtherTok{\textless{}{-}} \FunctionTok{paste0}\NormalTok{(df}\SpecialCharTok{$}\NormalTok{Freq, }\StringTok{" ("}\NormalTok{, df}\SpecialCharTok{$}\NormalTok{Percent, }\StringTok{"\%)"}\NormalTok{)}
+  
+\NormalTok{  wide }\OtherTok{\textless{}{-}}\NormalTok{ tidyr}\SpecialCharTok{::}\FunctionTok{pivot\_wider}\NormalTok{(}
+\NormalTok{    df,}
+    \AttributeTok{id\_cols  =}\NormalTok{ Var1,}
+    \AttributeTok{names\_from =}\NormalTok{ Var2,}
+    \AttributeTok{values\_from =}\NormalTok{ Label}
+\NormalTok{  )}
+  
+  \FunctionTok{names}\NormalTok{(wide)[}\DecValTok{1}\NormalTok{] }\OtherTok{\textless{}{-}} \StringTok{"Level"}
+\NormalTok{  wide}\SpecialCharTok{$}\NormalTok{Variable }\OtherTok{\textless{}{-}}\NormalTok{ v}
+\NormalTok{  wide}\SpecialCharTok{$}\NormalTok{Test     }\OtherTok{\textless{}{-}}\NormalTok{ test\_name}
+\NormalTok{  wide}\SpecialCharTok{$}\NormalTok{Pvalue   }\OtherTok{\textless{}{-}}\NormalTok{ test}\SpecialCharTok{$}\NormalTok{p.value}
+\NormalTok{  wide}
+\NormalTok{\}) }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{bind\_rows}\NormalTok{()}
+
+\CommentTok{\# Yixin: replace Variable codes with full names}
+\NormalTok{baseline\_cat }\OtherTok{\textless{}{-}}\NormalTok{ baseline\_cat }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{Variable =}\NormalTok{ dplyr}\SpecialCharTok{::}\FunctionTok{recode}\NormalTok{(}
+\NormalTok{      Variable,}
+      \AttributeTok{sex =} \StringTok{"Sex"}\NormalTok{,}
+      \AttributeTok{ascites =} \StringTok{"Ascites"}\NormalTok{,}
+      \AttributeTok{hepatomegaly =} \StringTok{"Hepatomegaly"}\NormalTok{,}
+      \AttributeTok{spiders =} \StringTok{"Spider angiomas"}\NormalTok{,}
+      \AttributeTok{edema =} \StringTok{"Edema"}\NormalTok{,}
+      \AttributeTok{stage =} \StringTok{"Histologic stage"}
+\NormalTok{    )}
+\NormalTok{  )}
+
+\CommentTok{\# Yixin: reorder columns for readability and give clearer names}
+\NormalTok{baseline\_cat }\OtherTok{\textless{}{-}}\NormalTok{ baseline\_cat }\SpecialCharTok{|\textgreater{}}
+  \FunctionTok{select}\NormalTok{(Variable, Level, Placebo, }\StringTok{\textasciigrave{}}\AttributeTok{D{-}penicillamine}\StringTok{\textasciigrave{}}\NormalTok{, Test, Pvalue)}
+
+\FunctionTok{colnames}\NormalTok{(baseline\_cat) }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}
+  \StringTok{"Baseline variable"}\NormalTok{,}
+  \StringTok{"Level"}\NormalTok{,}
+  \StringTok{"Placebo n (\%)"}\NormalTok{,}
+  \StringTok{"D{-}penicillamine n (\%)"}\NormalTok{,}
+  \StringTok{"Test type"}\NormalTok{,}
+  \StringTok{"p{-}value"}
+\NormalTok{)}
+
+\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(}
+\NormalTok{  baseline\_cat,}
+  \AttributeTok{digits =} \DecValTok{3}\NormalTok{,}
+  \AttributeTok{caption =} \StringTok{"Baseline categorical variables by treatment group (randomized patients)"}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.2169}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0723}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1687}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.2651}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1807}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0964}}@{}}
+\caption{Baseline categorical variables by treatment group (randomized
+patients)}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Baseline variable
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Level
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Placebo n (\%)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+D-penicillamine n (\%)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Test type
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p-value
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Baseline variable
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Level
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Placebo n (\%)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+D-penicillamine n (\%)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Test type
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p-value
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Sex & F & 139 (90.3\%) & 137 (86.7\%) & Chi-squared & 0.326 \\
+Sex & M & 15 (9.7\%) & 21 (13.3\%) & Chi-squared & 0.326 \\
+Ascites & N & 144 (93.5\%) & 144 (91.1\%) & Chi-squared & 0.433 \\
+Ascites & Y & 10 (6.5\%) & 14 (8.9\%) & Chi-squared & 0.433 \\
+Hepatomegaly & N & 67 (43.5\%) & 85 (53.8\%) & Chi-squared & 0.069 \\
+Hepatomegaly & Y & 87 (56.5\%) & 73 (46.2\%) & Chi-squared & 0.069 \\
+Spider angiomas & N & 109 (70.8\%) & 113 (71.5\%) & Chi-squared &
+0.885 \\
+Spider angiomas & Y & 45 (29.2\%) & 45 (28.5\%) & Chi-squared & 0.885 \\
+Edema & N & 131 (85.1\%) & 132 (83.5\%) & Chi-squared & 0.877 \\
+Edema & S & 13 (8.4\%) & 16 (10.1\%) & Chi-squared & 0.877 \\
+Edema & Y & 10 (6.5\%) & 10 (6.3\%) & Chi-squared & 0.877 \\
+Histologic stage & 1 & 4 (2.6\%) & 12 (7.6\%) & Fisher's exact &
+0.205 \\
+Histologic stage & 2 & 32 (20.8\%) & 35 (22.2\%) & Fisher's exact &
+0.205 \\
+Histologic stage & 3 & 64 (41.6\%) & 56 (35.4\%) & Fisher's exact &
+0.205 \\
+Histologic stage & 4 & 54 (35.1\%) & 55 (34.8\%) & Fisher's exact &
+0.205 \\
+\end{longtable}
+
+From the table above, we see that, for all categorical variables, the
+Chi-squared or Fisher's exact tests produced non-significant p-values.
+Therefore, we fail to reject the null hypothesis, indicating there's no
+evidence of imbalance in the distribution of any categorical baseline
+variables. The two randomized groups is therefore comparable with
+respect to these characteristics.
+
+\end{document}
